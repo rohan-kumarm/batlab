@@ -31,6 +31,8 @@ dependencies = [
 [project.optional-dependencies]
 # Test runner for the tests folder.
 dev = ["pytest>=8"]
+# MediaPipe pose model (Apache 2.0): pip install -e ".[mediapipe]"
+mediapipe = ["mediapipe>=0.10.14", "certifi"]
 
 # Creates a "batlab" command in the terminal.
 [project.scripts]

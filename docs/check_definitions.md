@@ -28,8 +28,17 @@ project's own implementations of the same measurements.
 ## Known problems (Stage 1)
 - **balance_side_to_side is not reliable yet.** From the front, the feet sit one behind the other,
   so the two ankles are only a few cm apart sideways and the centre of mass falls outside them.
-  The base needs toe and heel points, which YOLO11 does not give and MediaPipe does. Fix: MediaPipe adapter.
-- **front_knee_inside_off_stump is not reliable yet.** In the front-on view the legs overlap, and
-  YOLO11 placed both knees on the back leg in all three test deliveries, missing the front pad
-  beside the stumps. Fix options: MediaPipe (test whether it separates the legs), or take the
-  front knee from the side-on camera once both phones are used.
+  The base needs toe and heel points, which YOLO11 does not give and MediaPipe does. The check
+  now uses heels and toes whenever the pose model provides them (`--pose mediapipe`); not yet
+  verified on real footage.
+- **front_knee_inside_off_stump: which leg is which cannot be confirmed front-on.** From
+  behind the bowler's stumps, the back leg is directly behind the front leg. Both YOLO11 and
+  MediaPipe draw both legs on the one visible pad (checked on all 3 releases of the 10 Nov clip).
+  That visible pad is the front leg, so the knee position measured is roughly the front knee's,
+  but the model's left/right labels cannot be trusted here. Fix: take knee checks from the
+  side-on camera once both phones film the same deliveries.
+
+## Pose model notes
+- MediaPipe's person detector shrinks its input to about 224 px, so it cannot find a batter who
+  fills only a quarter of a 4K frame (0 of 3 releases found). The pipeline therefore runs it on a
+  region around the stumps (`batter_roi` in `calibrate.py`), which found the batter in 3 of 3.

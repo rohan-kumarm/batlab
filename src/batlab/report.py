@@ -17,7 +17,7 @@ from .calibrate import Calibration
 # Sides, for knowing which stump is off stump.
 from .geometry import Sides
 # Keypoints, for drawing the skeleton.
-from .pose import IDX, Keypoints
+from .pose import Keypoints
 
 # Pairs of keypoints joined by lines when drawing the skeleton.
 BONES = [("left_shoulder", "right_shoulder"), ("left_hip", "right_hip"),
@@ -26,7 +26,10 @@ BONES = [("left_shoulder", "right_shoulder"), ("left_hip", "right_hip"),
          ("right_shoulder", "right_elbow"), ("right_elbow", "right_wrist"),
          ("left_hip", "left_knee"), ("left_knee", "left_ankle"),
          ("right_hip", "right_knee"), ("right_knee", "right_ankle"),
-         ("left_eye", "right_eye")]
+         ("left_eye", "right_eye"),
+         # Feet: drawn only when the model gives heel and toe points (MediaPipe).
+         ("left_ankle", "left_heel"), ("left_heel", "left_toe"), ("left_ankle", "left_toe"),
+         ("right_ankle", "right_heel"), ("right_heel", "right_toe"), ("right_ankle", "right_toe")]
 # Order and display names of the checks in every output.
 CHECK_ORDER = ["eyes_level", "head_on_middle_off", "balance_side_to_side",
                "front_knee_inside_off_stump", "hands_under_head", "head_stillness_front"]
@@ -47,12 +50,14 @@ def draw_release(frame: np.ndarray, kp: Keypoints | None, cal: Calibration, side
     if kp is not None:
         # Each bone is a pair of point names.
         for a, b in BONES:
-            # Skip bones with an unsure end point.
-            if kp.conf[IDX[a]] < 0.5 or kp.conf[IDX[b]] < 0.5:
+            # Both end points, or None if missing or unsure (also None for feet with YOLO11).
+            pa, pb = kp.point(a), kp.point(b)
+            # Skip bones with a missing end point.
+            if pa is None or pb is None:
                 # Next bone.
                 continue
             # Draw the bone in green.
-            cv2.line(img, tuple(kp.xy[IDX[a]].astype(int)), tuple(kp.xy[IDX[b]].astype(int)), (0, 220, 0), 4)
+            cv2.line(img, tuple(pa.astype(int)), tuple(pb.astype(int)), (0, 220, 0), 4)
         # Crop around the person box and the stumps, with a margin.
         x1, y1, x2, y2 = kp.box
         # Left edge: whichever is further left, the person or the stumps, minus a margin.

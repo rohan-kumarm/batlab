@@ -35,8 +35,12 @@ class YoloPose:
         # Move the tensors to numpy and return them.
         return r.boxes.xyxy.cpu().numpy(), r.keypoints.xy.cpu().numpy(), r.keypoints.conf.cpu().numpy()
 
-    def estimate(self, frame: np.ndarray) -> Keypoints | None:
-        """Return the batter's keypoints in full-frame pixels, or None."""
+    def estimate(self, frame: np.ndarray, roi: tuple[int, int, int, int] | None = None) -> Keypoints | None:
+        """Return the batter's keypoints in full-frame pixels, or None.
+
+        `roi` is accepted to match the interface but not used: YOLO finds the batter in the whole
+        frame on its own, then re-runs on a crop.
+        """
         # First pass on the whole frame, only to find where the person is.
         boxes, _, _ = self._run(frame, self.imgsz)
         # Nobody found.

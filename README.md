@@ -23,6 +23,14 @@ batlab analyze sessions/2026-11-10_front.toml --out runs/2026-11-10_front
 ```
 The first run downloads the YOLO11 pose model (about 40 MB).
 
+### MediaPipe pose model (Apache 2.0, gives heel and toe points)
+```bash
+pip install -e ".[mediapipe]"
+batlab analyze sessions/2026-11-10_front.toml --pose mediapipe --out runs/2026-11-10_front_mp
+```
+The first MediaPipe run downloads its model (about 30 MB) to `~/.cache/batlab/`.
+Use a different `--out` folder per model so the two sets of results can be compared.
+
 Outputs in the `--out` folder:
 - `delivery_N_release.jpg`: release frame with skeleton, off-stump line (red) and middle-stump line (yellow)
 - `deliveries.csv`: every check for every delivery

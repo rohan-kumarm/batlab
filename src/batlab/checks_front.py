@@ -64,15 +64,28 @@ def centre_of_mass(kp: Keypoints) -> np.ndarray | None:
         pa = extra[a] if a in extra else kp.point(a)
         # Second end.
         pb = extra[b] if b in extra else kp.point(b)
-        # A missing end makes the estimate unreliable, so give up.
+        # Front-on, the back leg stands directly behind the front leg, so the pose model often
+        # cannot see it. Its sideways position is then about the same as the visible leg's, so a
+        # hidden leg segment borrows the other leg's matching segment.
+        if (pa is None or pb is None) and a.endswith(("_hip", "_knee")):
+            # The other side's name, e.g. "left_knee" -> "right_knee".
+            swap = (lambda n: n.replace("left_", "right_") if n.startswith("left_") else n.replace("right_", "left_"))
+            # Look up the mirrored segment's two ends.
+            pa, pb = kp.point(swap(a)), kp.point(swap(b))
+        # Skip a segment with a missing end (front-on, the back arm is usually hidden).
         if pa is None or pb is None:
-            # Signal missing.
-            return None
+            # Leave this segment out of the average.
+            continue
         # Segment centre: the point `frac` of the way from pa to pb.
         total += share * (pa + frac * (pb - pa))
         # Add the mass share.
         weight += share
-    # Divide by the total share to get the weighted average position.
+    # Allow at most 12% of body mass to be missing (one whole arm is 5%; both arms are 10%).
+    # More than that means the trunk, head or a leg is missing, and the estimate is unreliable.
+    if weight < 0.88:
+        # Signal missing.
+        return None
+    # Divide by the share actually found, so the result is the average of the visible segments.
     return total / weight
 
 
@@ -127,12 +140,14 @@ def front_checks(kp: Keypoints, cal: Calibration, sides: Sides) -> dict[str, flo
 
     # 3. Side-to-side balance: how far the centre of mass sits inside the outer foot lines.
     com = centre_of_mass(kp)
-    # Both ankles mark the two sides of the base.
-    la, ra = kp.point("left_ankle"), kp.point("right_ankle")
-    # Only measurable when all three points exist.
-    if com is not None and la is not None and ra is not None:
-        # Outer edges of the base in image x.
-        lo, hi = min(la[0], ra[0]), max(la[0], ra[0])
+    # Foot points that mark the base: ankles always; heels and toes when the model gives them.
+    foot = [kp.point(n) for n in ("left_ankle", "right_ankle", "left_heel", "right_heel", "left_toe", "right_toe")]
+    # Keep the ones that were found.
+    foot = [p for p in foot if p is not None]
+    # Measurable when the centre of mass and at least both ankles' worth of points exist.
+    if com is not None and len(foot) >= 2:
+        # Outer edges of the base in image x: the furthest-left and furthest-right foot points.
+        lo, hi = min(p[0] for p in foot), max(p[0] for p in foot)
         # Margin to the nearer edge in pixels; negative means the centre of mass is outside the base.
         margin_px = min(com[0] - lo, hi - com[0])
         # Convert to cm.
@@ -146,8 +161,13 @@ def front_checks(kp: Keypoints, cal: Calibration, sides: Sides) -> dict[str, flo
     # The minus sign turns "toward off" into "inside" (toward leg).
     out["front_knee_inside_off_stump"] = -_lateral_cm(knee[0], off_x, cal, sides) if knee is not None else None
 
-    # Hands: midpoint of the two wrists.
+    # Hands: midpoint of the two wrists; if one is hidden (common front-on), the visible one,
+    # since both hands hold the bat handle a few cm apart.
     hands = kp.midpoint("left_wrist", "right_wrist")
+    # Fall back to whichever single wrist was found.
+    if hands is None:
+        # First visible wrist, or None if neither is.
+        hands = kp.point("left_wrist") if kp.point("left_wrist") is not None else kp.point("right_wrist")
     # 5. Hands under head: sideways distance of the hands from a vertical line through the head.
     #    ("Hands centred" is measured side-on, so it is not in this file.)
     out["hands_under_head"] = _lateral_cm(hands[0], head[0], cal, sides) if hands is not None and head is not None else None

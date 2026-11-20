@@ -14,3 +14,4 @@ runs/
 *.MOV
 *.mov
 *.mp4
+.DS_Store

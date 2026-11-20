@@ -4,6 +4,8 @@
 import json
 # subprocess runs the ffmpeg and ffprobe programs.
 import subprocess
+# lru_cache stores a function's results so repeated calls are instant.
+from functools import lru_cache
 # dataclass writes __init__ for the VideoInfo class.
 from dataclasses import dataclass
 # Path type for file arguments.
@@ -26,6 +28,34 @@ HDR_TO_SDR = (
     # Convert back to a normal BT.709 video signal.
     "zscale=t=bt709:m=bt709:r=tv"
 )
+
+
+# Fallback when ffmpeg lacks zscale (some installs do): convert only the colour matrix.
+# HLG video was designed to look acceptable on normal screens, so this is close enough for
+# pose and the stump colour mask, though colours are less accurate than with HDR_TO_SDR.
+HDR_FALLBACK = "scale=in_color_matrix=bt2020:out_color_matrix=bt709"
+
+
+# Remember the answer per filter name, so ffmpeg is asked only once per run.
+@lru_cache(maxsize=None)
+def has_filter(name: str) -> bool:
+    """Return True if this computer's ffmpeg includes the named filter."""
+    # List every filter ffmpeg was built with.
+    out = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True, text=True).stdout
+    # Each filter line has the name as its second word; check for an exact match.
+    return any(line.split()[1:2] == [name] for line in out.splitlines())
+
+
+def run_ffmpeg(cmd: list[str]) -> bytes:
+    """Run ffmpeg and return its output; on failure, show ffmpeg's own error message."""
+    # Run the command and capture both output and error text.
+    result = subprocess.run(cmd, capture_output=True)
+    # A non-zero exit code means ffmpeg failed.
+    if result.returncode != 0:
+        # Include ffmpeg's error text so the cause is visible, not just the exit code.
+        raise RuntimeError(f"ffmpeg failed ({result.returncode}): {result.stderr.decode(errors='replace').strip()}")
+    # Return the raw output bytes.
+    return result.stdout
 
 
 # Read-only record of the facts about one video file.
@@ -82,8 +112,8 @@ def probe(path: str | Path) -> VideoInfo:
 
 def read_frames(info: VideoInfo, start_s: float, count: int, scale_width: int | None = None) -> np.ndarray:
     """Return `count` consecutive frames from `start_s` seconds as an array (count, H, W, 3), BGR."""
-    # List of filters to apply; HDR conversion first if needed.
-    filters = [HDR_TO_SDR] if info.hdr else []
+    # List of filters to apply; HDR conversion first if needed, using the fallback without zscale.
+    filters = [(HDR_TO_SDR if has_filter("zscale") else HDR_FALLBACK)] if info.hdr else []
     # Optional downscale to make scanning faster; -2 keeps the height even, as encoders need.
     if scale_width:
         # Add the scale filter.
@@ -115,7 +145,7 @@ def read_frames(info: VideoInfo, start_s: float, count: int, scale_width: int | 
         "-f", "rawvideo", "-",
     ]
     # Run ffmpeg and collect the raw bytes.
-    raw = subprocess.run(cmd, capture_output=True, check=True).stdout
+    raw = run_ffmpeg(cmd)
     # Number of bytes in one frame.
     frame_bytes = out_w * out_h * 3
     # Number of whole frames received (fewer than asked if the clip ended).
@@ -127,13 +157,11 @@ def read_frames(info: VideoInfo, start_s: float, count: int, scale_width: int | 
 def read_audio(path: str | Path, sample_rate: int = 48000) -> np.ndarray:
     """Return the first audio track as mono float32 samples."""
     # Run ffmpeg to decode audio only.
-    raw = subprocess.run(
+    raw = run_ffmpeg(
         # -map 0:a:0 picks the first audio track (iPhones add a second spatial-audio track);
         # -ac 1 mixes to mono; -ar sets the sample rate; -f f32le outputs raw 32-bit floats.
         ["ffmpeg", "-v", "error", "-i", str(path), "-map", "0:a:0", "-vn",
-         "-ac", "1", "-ar", str(sample_rate), "-f", "f32le", "-"],
-        # Capture the bytes; raise an error if ffmpeg fails.
-        capture_output=True, check=True,
-    ).stdout
+         "-ac", "1", "-ar", str(sample_rate), "-f", "f32le", "-"]
+    )
     # Interpret the bytes as float32 samples.
     return np.frombuffer(raw, dtype=np.float32)

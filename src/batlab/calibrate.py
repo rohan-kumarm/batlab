@@ -30,8 +30,23 @@ def stump_boxes(frame: np.ndarray) -> list[tuple[int, int, int, int]]:
     """Return (x, y, w, h) boxes of tall, thin red/orange shapes: the stump candidates."""
     # HSV separates colour (hue) from brightness, which makes colour masks reliable.
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # Red/orange sits at both ends of OpenCV's 0-180 hue range, so two ranges are combined.
-    mask = cv2.inRange(hsv, (0, 140, 120), (12, 255, 255)) | cv2.inRange(hsv, (170, 140, 120), (180, 255, 255))
+    # Split into hue, saturation and brightness channels (as signed ints for the maths below).
+    h, s, v = (c.astype(np.int16) for c in cv2.split(hsv))
+    # Red sits at both ends of OpenCV's 0-180 hue scale; shift 170-180 to -10..0 so red is one range.
+    h = np.where(h >= 170, h - 180, h)
+    # Bright, saturated pixels. Stumps measured brightness 220+; skin measured 100-180, so it is left out.
+    bright = (s >= 115) & (v >= 180) & (h >= -10) & (h <= 25)
+    # Too few such pixels means no stumps in this frame.
+    if bright.sum() < 50:
+        # Nothing to return.
+        return []
+    # The stumps' exact hue depends on how the HDR video was converted (red with zscale, orange
+    # without), so find it from the frame: the most common hue among the bright, saturated pixels.
+    hist = np.bincount(h[bright] + 10, minlength=36)
+    # Convert the histogram's peak position back to a hue value.
+    stump_hue = int(np.argmax(hist)) - 10
+    # Keep only pixels within 5 hue steps of the stump colour, so neighbouring stumps stay separate.
+    mask = (bright & (np.abs(h - stump_hue) <= 5)).astype(np.uint8) * 255
     # Label each connected group of mask pixels and get its bounding box.
     n, _, stats, _ = cv2.connectedComponentsWithStats(mask)
     # Smallest stump height allowed: 3% of the frame height (drops balls and specks).
@@ -86,10 +101,30 @@ def cluster_stumps(boxes: list[tuple[int, int, int, int]]) -> list[list[tuple[in
         groups[-1].append(b)
         # Remember this centre for the next comparison.
         prev = cx
-    # Keep the 3 groups seen in the most frames (the real stumps), then sort them left to right.
-    top3 = sorted(groups, key=len, reverse=True)[:3]
-    # Return in image order, left to right.
-    return sorted(top3, key=lambda g: np.median([b[0] + b[2] / 2 for b in g]))
+    # Centre x and typical height of each group.
+    cx = [float(np.median([b[0] + b[2] / 2 for b in g])) for g in groups]
+    # Median box height in each group.
+    hs = [float(np.median([b[3] for b in g])) for g in groups]
+    # Best trio of groups found so far, and how many boxes it holds.
+    best, best_count = [], -1
+    # Try every trio of groups, in left-to-right order.
+    for i in range(len(groups)):
+        # Second group, to the right of the first.
+        for j in range(i + 1, len(groups)):
+            # Third group, to the right of the second.
+            for k in range(j + 1, len(groups)):
+                # A real set is about 23 cm wide and 71 cm tall, so centres span under 0.45 x height.
+                if cx[k] - cx[i] > 0.45 * max(hs[i], hs[j], hs[k]):
+                    # Too spread out to be one set of stumps.
+                    continue
+                # Prefer the trio seen in the most frames.
+                count = len(groups[i]) + len(groups[j]) + len(groups[k])
+                # Keep it if it beats the best so far.
+                if count > best_count:
+                    # Store the trio (already in left-to-right order).
+                    best, best_count = [groups[i], groups[j], groups[k]], count
+    # Empty list if no trio passed.
+    return best
 
 
 def calibrate_front(info: VideoInfo, stump_height_cm: float, step_s: float = 0.5,

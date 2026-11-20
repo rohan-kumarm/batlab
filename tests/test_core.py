@@ -46,8 +46,10 @@ def test_release_found_and_bat_sound_grouped():
 
 
 def test_stump_clusters_ignore_slivers():
-    # Three stumps at x = 100, 125, 150 seen in several frames, plus one 3-px sliver.
-    boxes = [(100, 0, 10, 80), (125, 0, 10, 80), (150, 0, 10, 80)] * 4 + [(118, 0, 3, 40)]
+    # Three 200-px stumps at x = 100, 125, 150 seen in four frames, a 3-px sliver, and a
+    # far-off orange object at x = 600 that must not be taken as a stump.
+    boxes = ([(100, 0, 10, 200), (125, 0, 10, 200), (150, 0, 10, 200)] * 4
+             + [(118, 0, 3, 40)] + [(600, 0, 10, 200)] * 4)
     # Group them.
     groups = cluster_stumps(boxes)
     # Three groups, each from the four frames.

@@ -1,0 +1,43 @@
+# Build settings: tells pip how to install this folder as a package.
+[build-system]
+# setuptools is the tool that builds the package.
+requires = ["setuptools>=68"]
+# This names the setuptools backend that pip calls.
+build-backend = "setuptools.build_meta"
+
+# Package information.
+[project]
+# Package name used by pip and by "import batlab".
+name = "batlab"
+# Version number; raise it at each release.
+version = "0.1.0"
+# One-line description shown by pip.
+description = "Batting technique analysis from net-session video"
+# tomllib (used for settings files) needs Python 3.11 or newer.
+requires-python = ">=3.11"
+# Libraries the package needs at run time.
+dependencies = [
+    # Arrays and math.
+    "numpy>=1.26",
+    # Audio filtering and peak finding.
+    "scipy>=1.11",
+    # Image processing (stump colour mask, drawing).
+    "opencv-python>=4.9",
+    # YOLO11 pose model (AGPL-3.0; see docs/licensing.md before any paid use).
+    "ultralytics>=8.3",
+]
+
+# Optional extras installed with: pip install -e ".[dev]"
+[project.optional-dependencies]
+# Test runner for the tests folder.
+dev = ["pytest>=8"]
+
+# Creates a "batlab" command in the terminal.
+[project.scripts]
+# The command runs the main() function in src/batlab/cli.py.
+batlab = "batlab.cli:main"
+
+# Tells setuptools the code lives under src/.
+[tool.setuptools.packages.find]
+# Look for packages inside the src folder.
+where = ["src"]

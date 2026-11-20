@@ -1,0 +1,47 @@
+# Target ranges for each check. The pipeline reads this file on every run.
+#
+# "good" values marked WC are the targets WillowCoach shows for the same check, used as a
+# starting point. "ok" values are PLACEHOLDERS (no source). Change any value to match how you coach.
+#
+# Default grading uses the size of the value, ignoring its sign:
+#   size <= good -> "textbook";  size <= ok -> "near textbook";  bigger -> "unorthodox"
+# Checks with inside_is_good = true are graded the other way: larger is better.
+#   value >= good -> "textbook";  value >= ok -> "near textbook";  smaller -> "unorthodox"
+
+[eyes_level]
+# Tilt of the eye line at release, degrees. good: WC (<= 5). ok: PLACEHOLDER.
+good = 5.0
+ok = 10.0
+unit = "deg"
+
+[head_on_middle_off]
+# Distance of the head outside the off-to-middle stump zone, cm (0 = inside). good: WC (<= 0.5). ok: PLACEHOLDER.
+good = 0.5
+ok = 5.0
+unit = "cm"
+
+[balance_side_to_side]
+# How far the centre of mass sits inside the outer foot lines, cm. good: WC (>= 0). ok: PLACEHOLDER.
+good = 0.0
+ok = -3.0
+unit = "cm"
+inside_is_good = true
+
+[front_knee_inside_off_stump]
+# How far the front knee is on the leg side of the off-stump line, cm. good: WC (inside, >= 0). ok: PLACEHOLDER.
+good = 0.0
+ok = -5.0
+unit = "cm"
+inside_is_good = true
+
+[hands_under_head]
+# Sideways distance of the hands from a vertical line through the head, cm. good: WC (<= 5). ok: PLACEHOLDER.
+good = 5.0
+ok = 10.0
+unit = "cm"
+
+[head_stillness_front]
+# Largest head movement in the window before release, cm. good: WC (<= 5). ok: PLACEHOLDER.
+good = 5.0
+ok = 8.0
+unit = "cm"

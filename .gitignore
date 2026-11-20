@@ -1,0 +1,16 @@
+# Python bytecode caches.
+__pycache__/
+# Package build information created by pip install -e.
+*.egg-info/
+# Virtual environment folder.
+.venv/
+# Test runner cache.
+.pytest_cache/
+# Model weights: large, downloaded automatically.
+*.pt
+# Pipeline outputs: regenerate with batlab analyze.
+runs/
+# Videos: too large for git and contain players' footage.
+*.MOV
+*.mov
+*.mp4

@@ -1,0 +1,25 @@
+# Settings for one filmed session. Copy this file for each new session.
+
+[player]
+# Player's name, used in report file names.
+name = "Rohan"
+# "right" or "left". Decides which leg is front and which side is off.
+batting_hand = "right"
+
+[session]
+# Date filmed, as YYYY-MM-DD.
+date = "2026-11-10"
+# "machine" or "bowler". Machine sessions find release from the machine's firing sound.
+delivery_source = "machine"
+# Machine speed in mph, used only as a sanity check on release-to-impact time.
+machine_speed_mph = 62
+
+[calibration]
+# Height of the stumps above the ground in cm. 71.1 is regulation; measure practice stumps if possible.
+stump_height_cm = 71.1
+
+[videos]
+# Path to the front-on clip (camera behind the bowler's or machine's end).
+front = "/Users/rohankumar/Downloads/IMG_0478.MOV"
+# Side-on clip filmed on the same deliveries. Leave empty until both phones are used.
+side = ""

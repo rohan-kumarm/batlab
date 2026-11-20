@@ -1,0 +1,13 @@
+# Values from Rohan's WillowCoach review dated 15 Nov 2026 (Setup page).
+# Used only to compare against this pipeline's numbers. They are another system's
+# estimates, not ground truth, and they cover the whole 4 GB front-on session,
+# while the test clip is a 28-second trim of it.
+# Signs: WillowCoach shows "inside"/"outside" and "left" in words; values are stored as shown.
+
+[front]
+eyes_level = { value = 6.0, note = "6.0 deg tilt left" }
+head_on_middle_off = { value = 0.0, note = "0.0 cm" }
+balance_side_to_side = { value = 5.4, note = "5.4 cm inside" }
+front_knee_inside_off_stump = { value = 10.9, note = "10.9 cm inside" }
+hands_under_head = { value = 4.1, note = "4.1 cm" }
+head_stillness_front = { value = 2.7, note = "2.7 cm" }

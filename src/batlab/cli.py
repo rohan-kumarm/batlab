@@ -12,7 +12,7 @@ from .geometry import front_on_sides
 from .release import find_releases
 from .report import draw_release, summarise, write_outputs
 from .session import load_session, load_toml
-from .video import has_filter, probe, read_audio, read_frames
+from .video import probe, read_audio, read_frames
 
 # Folder that holds config/ (two levels above this file: src/batlab -> project root).
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,11 +38,6 @@ def analyze(args: argparse.Namespace) -> None:
     info = probe(session.front_video)
     # Report what was read.
     print(f"Video: {info.width}x{info.height} @ {info.fps:.2f} fps, {info.duration:.1f} s, HDR={info.hdr}")
-    # Warn when the less accurate HDR colour conversion will be used.
-    if info.hdr and not has_filter("zscale"):
-        # Explain the effect and the fix.
-        print("Note: this ffmpeg has no 'zscale' filter, so a simpler HDR colour conversion is used. "
-              "The cm scale can be about 7% off. Install an ffmpeg with zscale for best accuracy.")
     # Find releases from the machine's firing sound.
     releases = find_releases(read_audio(info.path), 48000)
     # Report how many deliveries were found.

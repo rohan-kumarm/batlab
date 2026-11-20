@@ -4,8 +4,6 @@
 import json
 # subprocess runs the ffmpeg and ffprobe programs.
 import subprocess
-# lru_cache stores a function's results so repeated calls are instant.
-from functools import lru_cache
 # dataclass writes __init__ for the VideoInfo class.
 from dataclasses import dataclass
 # Path type for file arguments.
@@ -14,36 +12,12 @@ from pathlib import Path
 # numpy holds frames as arrays of pixels.
 import numpy as np
 
-# iPhones record HDR video (HLG). Without converting it to normal (SDR) colour, frames look
-# washed out and the stump colour mask fails. This ffmpeg filter chain does that conversion.
-HDR_TO_SDR = (
-    # Convert the HLG signal to linear light.
-    "zscale=t=linear:npl=100,"
-    # Switch to floating-point RGB so the next steps keep precision.
-    "format=gbrpf32le,"
-    # Convert the wide BT.2020 colours to normal BT.709 colours.
-    "zscale=p=bt709,"
-    # Compress bright highlights into the normal range (the "hable" curve).
-    "tonemap=hable,"
-    # Convert back to a normal BT.709 video signal.
-    "zscale=t=bt709:m=bt709:r=tv"
-)
-
-
-# Fallback when ffmpeg lacks zscale (some installs do): convert only the colour matrix.
-# HLG video was designed to look acceptable on normal screens, so this is close enough for
-# pose and the stump colour mask, though colours are less accurate than with HDR_TO_SDR.
-HDR_FALLBACK = "scale=in_color_matrix=bt2020:out_color_matrix=bt709"
-
-
-# Remember the answer per filter name, so ffmpeg is asked only once per run.
-@lru_cache(maxsize=None)
-def has_filter(name: str) -> bool:
-    """Return True if this computer's ffmpeg includes the named filter."""
-    # List every filter ffmpeg was built with.
-    out = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True, text=True).stdout
-    # Each filter line has the name as its second word; check for an exact match.
-    return any(line.split()[1:2] == [name] for line in out.splitlines())
+# iPhones record HDR video (HLG) with wide BT.2020 colours. This filter converts only the colour
+# matrix to normal BT.709. HLG was designed to look acceptable on normal screens, so no tone
+# mapping is needed for pose and the stump mask. A full tone-mapping chain (zscale + tonemap) was
+# tried first, but its output changed between ffmpeg 6 and ffmpeg 9 (version 9 overexposed the
+# stumps to white), while this plain conversion gives the same result on both.
+HDR_TO_SDR = "scale=in_color_matrix=bt2020:out_color_matrix=bt709"
 
 
 def run_ffmpeg(cmd: list[str]) -> bytes:
@@ -112,8 +86,8 @@ def probe(path: str | Path) -> VideoInfo:
 
 def read_frames(info: VideoInfo, start_s: float, count: int, scale_width: int | None = None) -> np.ndarray:
     """Return `count` consecutive frames from `start_s` seconds as an array (count, H, W, 3), BGR."""
-    # List of filters to apply; HDR conversion first if needed, using the fallback without zscale.
-    filters = [(HDR_TO_SDR if has_filter("zscale") else HDR_FALLBACK)] if info.hdr else []
+    # List of filters to apply; HDR conversion first if needed.
+    filters = [HDR_TO_SDR] if info.hdr else []
     # Optional downscale to make scanning faster; -2 keeps the height even, as encoders need.
     if scale_width:
         # Add the scale filter.

@@ -34,19 +34,25 @@ def stump_boxes(frame: np.ndarray) -> list[tuple[int, int, int, int]]:
     h, s, v = (c.astype(np.int16) for c in cv2.split(hsv))
     # Red sits at both ends of OpenCV's 0-180 hue scale; shift 170-180 to -10..0 so red is one range.
     h = np.where(h >= 170, h - 180, h)
-    # Bright, saturated pixels. Stumps measured brightness 220+; skin measured 100-180, so it is left out.
+    # Strict mask: bright, saturated pixels. Stumps measured brightness 220+; skin measured 100-180,
+    # so skin is left out, and the gaps between neighbouring stumps stay empty.
     bright = (s >= 115) & (v >= 180) & (h >= -10) & (h <= 25)
     # Too few such pixels means no stumps in this frame.
     if bright.sum() < 50:
         # Nothing to return.
         return []
-    # The stumps' exact hue depends on how the HDR video was converted (red with zscale, orange
-    # without), so find it from the frame: the most common hue among the bright, saturated pixels.
+    # Stump colour varies with lighting and camera, so find it from the frame: the most common
+    # hue among the bright, saturated pixels.
     hist = np.bincount(h[bright] + 10, minlength=36)
     # Convert the histogram's peak position back to a hue value.
     stump_hue = int(np.argmax(hist)) - 10
-    # Keep only pixels within 5 hue steps of the stump colour, so neighbouring stumps stay separate.
-    mask = (bright & (np.abs(h - stump_hue) <= 5)).astype(np.uint8) * 255
+    # Pixels within 5 hue steps of the stump colour.
+    near_hue = np.abs(h - stump_hue) <= 5
+    # Strict mask finds where each stump is sideways.
+    mask = (bright & near_hue).astype(np.uint8) * 255
+    # Relaxed mask catches the slightly darker stump tops and paler bases; used only to extend
+    # each stump up and down, never to find stumps, because it joins neighbouring stumps.
+    relaxed = (s >= 60) & (v >= 120) & near_hue
     # Label each connected group of mask pixels and get its bounding box.
     n, _, stats, _ = cv2.connectedComponentsWithStats(mask)
     # Smallest stump height allowed: 3% of the frame height (drops balls and specks).
@@ -73,6 +79,26 @@ def stump_boxes(frame: np.ndarray) -> list[tuple[int, int, int, int]]:
         else:
             # No overlap: this is a new stump candidate.
             merged.append([x, y, w, h])
+    # Extend each box up and down through rows where the relaxed mask covers the stump's columns.
+    for b in merged:
+        # Unpack the box.
+        x, y, w, h = b
+        # For each row, True if at least half of the stump's columns are in the relaxed mask.
+        rows = relaxed[:, x:x + w].mean(axis=1) >= 0.5
+        # New top: move up while the row above still belongs to the stump.
+        top = y
+        # Stop at the image edge or the first row that is not stump-coloured.
+        while top > 0 and rows[top - 1]:
+            # Move up one row.
+            top -= 1
+        # New bottom (one past the last stump row): move down the same way.
+        bottom = y + h
+        # Stop at the image edge or the first row that is not stump-coloured.
+        while bottom < len(rows) and rows[bottom]:
+            # Move down one row.
+            bottom += 1
+        # Store the extended box.
+        b[1], b[3] = top, bottom - top
     # Return as tuples.
     return [tuple(b) for b in merged]
 

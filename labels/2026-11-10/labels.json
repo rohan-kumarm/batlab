@@ -1,0 +1,292 @@
+{
+  "video": "IMG_0478.MOV",
+  "points": [
+    "eye_left_in_picture",
+    "eye_right_in_picture",
+    "hands",
+    "front_knee",
+    "feet_left_edge",
+    "feet_right_edge"
+  ],
+  "frames": [
+    {
+      "delivery": 1,
+      "frame": 203,
+      "frames_before_release": 12,
+      "points": {
+        "eye_left_in_picture": [
+          1220.6,
+          1054.6
+        ],
+        "eye_right_in_picture": [
+          1251.7,
+          1054.6
+        ],
+        "hands": [
+          1255,
+          1315.3
+        ],
+        "front_knee": [
+          1286.1,
+          1505.4
+        ],
+        "feet_left_edge": [
+          1235.3,
+          1761.2
+        ],
+        "feet_right_edge": [
+          1402.5,
+          1761.2
+        ]
+      }
+    },
+    {
+      "delivery": 1,
+      "frame": 209,
+      "frames_before_release": 6,
+      "points": {
+        "eye_left_in_picture": [
+          1210.7,
+          1057.9
+        ],
+        "eye_right_in_picture": [
+          1246.8,
+          1054.6
+        ],
+        "hands": [
+          1250.1,
+          1318.6
+        ],
+        "front_knee": [
+          1294.3,
+          1516.9
+        ],
+        "feet_left_edge": [
+          1238.6,
+          1761.2
+        ],
+        "feet_right_edge": [
+          1397.5,
+          1756.3
+        ]
+      }
+    },
+    {
+      "delivery": 1,
+      "frame": 215,
+      "frames_before_release": 0,
+      "points": {
+        "eye_left_in_picture": [
+          1204.2,
+          1057.9
+        ],
+        "eye_right_in_picture": [
+          1240.2,
+          1057.9
+        ],
+        "hands": [
+          1240.2,
+          1316.9
+        ],
+        "front_knee": [
+          1294.3,
+          1520.2
+        ],
+        "feet_left_edge": [
+          1240.2,
+          1756.3
+        ],
+        "feet_right_edge": [
+          1395.9,
+          1751.3
+        ]
+      }
+    },
+    {
+      "delivery": 2,
+      "frame": 934,
+      "frames_before_release": 12,
+      "points": {
+        "eye_left_in_picture": [
+          1232,
+          1061.2
+        ],
+        "eye_right_in_picture": [
+          1268.1,
+          1059.6
+        ],
+        "hands": [
+          1274.6,
+          1316.9
+        ],
+        "front_knee": [
+          1327.1,
+          1515.3
+        ],
+        "feet_left_edge": [
+          1253.3,
+          1759.5
+        ],
+        "feet_right_edge": [
+          1407.4,
+          1753
+        ]
+      }
+    },
+    {
+      "delivery": 2,
+      "frame": 940,
+      "frames_before_release": 6,
+      "points": {
+        "eye_left_in_picture": [
+          1225.5,
+          1062.8
+        ],
+        "eye_right_in_picture": [
+          1261.5,
+          1059.6
+        ],
+        "hands": [
+          1264.8,
+          1316.9
+        ],
+        "front_knee": [
+          1325.4,
+          1512
+        ],
+        "feet_left_edge": [
+          1251.7,
+          1756.3
+        ],
+        "feet_right_edge": [
+          1415.6,
+          1757.9
+        ]
+      }
+    },
+    {
+      "delivery": 2,
+      "frame": 946,
+      "frames_before_release": 0,
+      "points": {
+        "eye_left_in_picture": [
+          1218.9,
+          1064.5
+        ],
+        "eye_right_in_picture": [
+          1253.3,
+          1064.5
+        ],
+        "hands": [
+          1258.3,
+          1318.6
+        ],
+        "front_knee": [
+          1333.6,
+          1515.3
+        ],
+        "feet_left_edge": [
+          1258.3,
+          1754.6
+        ],
+        "feet_right_edge": [
+          1413.9,
+          1756.3
+        ]
+      }
+    },
+    {
+      "delivery": 3,
+      "frame": 1451,
+      "frames_before_release": 12,
+      "points": {
+        "eye_left_in_picture": [
+          1240.2,
+          1057.9
+        ],
+        "eye_right_in_picture": [
+          1274.6,
+          1057.9
+        ],
+        "hands": [
+          1268.1,
+          1305.4
+        ],
+        "front_knee": [
+          1309.1,
+          1515.3
+        ],
+        "feet_left_edge": [
+          1258.3,
+          1759.5
+        ],
+        "feet_right_edge": [
+          1441.8,
+          1754.6
+        ]
+      }
+    },
+    {
+      "delivery": 3,
+      "frame": 1457,
+      "frames_before_release": 6,
+      "points": {
+        "eye_left_in_picture": [
+          1228.8,
+          1057.9
+        ],
+        "eye_right_in_picture": [
+          1268.1,
+          1057.9
+        ],
+        "hands": [
+          1268.1,
+          1313.6
+        ],
+        "front_knee": [
+          1315.6,
+          1508.7
+        ],
+        "feet_left_edge": [
+          1255,
+          1757.9
+        ],
+        "feet_right_edge": [
+          1422.1,
+          1761.2
+        ]
+      }
+    },
+    {
+      "delivery": 3,
+      "frame": 1463,
+      "frames_before_release": 0,
+      "points": {
+        "eye_left_in_picture": [
+          1223.8,
+          1062.8
+        ],
+        "eye_right_in_picture": [
+          1259.9,
+          1057.9
+        ],
+        "hands": [
+          1263.2,
+          1318.6
+        ],
+        "front_knee": [
+          1323.8,
+          1515.3
+        ],
+        "feet_left_edge": [
+          1258.3,
+          1757.9
+        ],
+        "feet_right_edge": [
+          1420.5,
+          1762.8
+        ]
+      }
+    }
+  ]
+}

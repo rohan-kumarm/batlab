@@ -37,6 +37,21 @@ Outputs in the `--out` folder:
 - `summary.md`: per-check average, spread, grade and the WillowCoach value
 - `report.json`: everything above plus calibration and timings
 
+## Checking accuracy against your own marks
+1. Build the marking page (9 frames: each release, plus 0.1 s and 0.2 s before it):
+```bash
+batlab label sessions/2026-11-10_front.toml --out labels/2026-11-10
+```
+2. Open `labels/2026-11-10/index.html` in a browser. Click the 6 points on each frame, using the
+   zoomed view for precision. Press S for a point you cannot see. Click "Download labels.json"
+   and move the file into `labels/2026-11-10/`.
+3. Score both models against your marks:
+```bash
+batlab evaluate sessions/2026-11-10_front.toml --labels labels/2026-11-10/labels.json
+```
+This prints and saves `evaluation.md`: how far each model's points are from your marks (cm), and
+each check worked out from your marks next to each model's value and WillowCoach's.
+
 ## Settings
 - `config/targets.toml`: grading ranges (edit to match your coaching)
 - `config/willowcoach_reference.toml`: values from the WillowCoach review, for comparison

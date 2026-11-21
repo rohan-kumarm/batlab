@@ -225,3 +225,39 @@ def test_hidden_back_leg_borrows_front_leg_for_balance():
     kp = _pose({n: (100.0, 50.0) for n in names} | {"left_ankle": (90.0, 90.0), "right_ankle": (110.0, 90.0)})
     # Without borrowing, 5% (arm) + 16.1% (thigh + shank) would be missing; with it, balance is measured.
     assert front_checks(kp, cal, front_on_sides("right"))["balance_side_to_side"] is not None
+
+
+def test_marks_give_true_check_values():
+    # Converter under test.
+    from batlab.evaluate import marks_to_keypoints
+    # 1 cm per pixel; off stump at x 100, middle at 120 (right-hander).
+    cal = Calibration(1.0, (100.0, 120.0, 140.0), 0.0, 71.0, 1)
+    # Marks as the page saves them: level eyes over the off-to-middle zone, hands 3 px right of
+    # the head, front knee 30 px inside off stump.
+    marks = {"eye_left_in_picture": [105, 10], "eye_right_in_picture": [115, 10], "hands": [113, 40],
+             "front_knee": [130, 60], "feet_left_edge": [95, 90], "feet_right_edge": [150, 90]}
+    # Checks computed from the marks.
+    out = front_checks(marks_to_keypoints(marks, front_on_sides("right")), cal, front_on_sides("right"))
+    # Level eyes.
+    assert out["eyes_level"] == 0.0
+    # Head inside the zone.
+    assert out["head_on_middle_off"] == 0.0
+    # Knee 30 cm on the leg side of off stump.
+    assert out["front_knee_inside_off_stump"] == 30.0
+    # Hands 3 px to the right of the head = 3 cm toward leg for a right-hander, so -3.
+    assert out["hands_under_head"] == -3.0
+
+
+def test_point_errors_ignore_eye_label_swaps():
+    # Error function under test.
+    from batlab.evaluate import point_errors
+    # Model output with the eyes labelled the other way round from the picture order.
+    kp = _pose({"left_eye": (115.0, 10.0), "right_eye": (105.0, 10.0), "left_wrist": (113.0, 44.0)})
+    # Marks.
+    marks = {"eye_left_in_picture": [105, 10], "eye_right_in_picture": [115, 10], "hands": [113, 40]}
+    # 1 cm per pixel.
+    err = point_errors(kp, marks, front_on_sides("right"), 1.0)
+    # The eye midpoint is the same either way, so the swap costs nothing.
+    assert err["head (eye midpoint)"] == 0.0
+    # One visible wrist 4 px below the marked hands: 4 cm.
+    assert err["hands"] == 4.0

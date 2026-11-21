@@ -1,4 +1,4 @@
-"""Command line entry point: batlab analyze <session.toml>"""
+"""Command line entry point: batlab analyze | label | evaluate <session.toml>"""
 
 # argparse reads the command line options.
 import argparse
@@ -20,14 +20,10 @@ from .video import probe, read_audio, read_frames
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def analyze(args: argparse.Namespace) -> None:
-    """Run the Stage 1 front-on pipeline for one session."""
+def prepare(session_path: str):
+    """Shared first steps: load the session, read the video, find releases, calibrate."""
     # Load the session settings.
-    session = load_session(args.session)
-    # Load the target ranges.
-    targets = load_toml(args.targets)
-    # Load the WillowCoach reference values if the file exists.
-    reference = load_toml(args.reference) if Path(args.reference).exists() else None
+    session = load_session(session_path)
     # Stage 1 needs a front-on clip.
     if session.front_video is None:
         # Stop with a clear message.
@@ -50,17 +46,34 @@ def analyze(args: argparse.Namespace) -> None:
     print(f"Calibration: {cal.cm_per_px:.4f} cm/px from {cal.frames_used} frames, stumps at x={[round(x) for x in cal.stump_x]}")
     # Work out off side and front leg from the batting hand.
     sides = front_on_sides(session.batting_hand)
-    # Pick the pose model. Imports happen here so only the chosen model's library must be installed.
-    if args.pose == "mediapipe":
-        # MediaPipe adapter (Apache 2.0).
+    # Return everything the commands need.
+    return session, info, releases, cal, sides
+
+
+def load_pose(name: str, model_path: str | None):
+    """Load a pose adapter by name. Imports happen here so only that model's library is needed."""
+    # MediaPipe adapter (Apache 2.0).
+    if name == "mediapipe":
+        # Import only when chosen.
         from .pose.mediapipe_pose import MediaPipePose
-        # Load it; a missing model path means "download to the cache on first use".
-        pose = MediaPipePose(args.pose_model)
-    else:
-        # YOLO11 adapter (AGPL-3.0).
-        from .pose.yolo import YoloPose
-        # Load it; ultralytics downloads "yolo11m-pose.pt" itself if no path is given.
-        pose = YoloPose(args.pose_model or "yolo11m-pose.pt")
+        # A missing model path means "download to the cache on first use".
+        return MediaPipePose(model_path)
+    # YOLO11 adapter (AGPL-3.0).
+    from .pose.yolo import YoloPose
+    # Ultralytics downloads "yolo11m-pose.pt" itself if no path is given.
+    return YoloPose(model_path or "yolo11m-pose.pt")
+
+
+def analyze(args: argparse.Namespace) -> None:
+    """Run the Stage 1 front-on pipeline for one session."""
+    # Shared setup.
+    session, info, releases, cal, sides = prepare(args.session)
+    # Load the target ranges.
+    targets = load_toml(args.targets)
+    # Load the WillowCoach reference values if the file exists.
+    reference = load_toml(args.reference) if Path(args.reference).exists() else None
+    # Load the chosen pose model.
+    pose = load_pose(args.pose, args.pose_model)
     # Report which model is in use.
     print(f"Pose model: {args.pose}")
     # Region around the batter, from the stumps (MediaPipe needs it; YOLO ignores it).
@@ -146,6 +159,50 @@ def analyze(args: argparse.Namespace) -> None:
     print(f"Outputs written to {out_dir.resolve()}")
 
 
+def label(args: argparse.Namespace) -> None:
+    """Build the marking page for one session."""
+    # Imported here: only this command needs it.
+    from .label import build_label_page
+    # Shared setup.
+    _, info, releases, cal, _ = prepare(args.session)
+    # Release frame numbers.
+    release_frames = [int(round(r.time_s * info.fps)) for r in releases]
+    # Write the page.
+    page = build_label_page(info, cal, release_frames, Path(args.out))
+    # Tell the user where it is.
+    print(f"Marking page written to {page.resolve()}")
+    # And what to do next.
+    print("Open it in a browser, mark every frame, then click 'Download labels.json'.")
+
+
+def evaluate_cmd(args: argparse.Namespace) -> None:
+    """Score each pose model against the marks in labels.json."""
+    # json reads the labels file.
+    import json
+    # Imported here: only this command needs it.
+    from .evaluate import evaluate, format_report
+    # Shared setup.
+    _, info, _, cal, sides = prepare(args.session)
+    # Read the marks.
+    labels = json.loads(Path(args.labels).read_text())
+    # Load each requested model, with its optional model file.
+    paths = {"yolo": args.yolo_model, "mediapipe": args.mediapipe_model}
+    # Name -> loaded adapter.
+    models = {m: load_pose(m, paths[m]) for m in args.pose}
+    # Run the comparison.
+    result = evaluate(info, cal, sides, labels, models)
+    # WillowCoach values for the last column, if the file exists.
+    reference = load_toml(args.reference) if Path(args.reference).exists() else None
+    # Build the tables.
+    text = format_report(result, reference)
+    # Save next to the labels file.
+    out = Path(args.labels).with_name("evaluation.md")
+    # Write the report.
+    out.write_text(text)
+    # Show it and say where it was saved.
+    print(text + f"\nSaved to {out.resolve()}")
+
+
 def main() -> None:
     """Parse the command line and run the chosen command."""
     # Top-level parser. allow_abbrev=False stops shortened option names (e.g. --pose being read as --pose-model).
@@ -168,12 +225,39 @@ def main() -> None:
     a.add_argument("--pose-model", default=None)
     # Length of the head stillness window before release, in seconds.
     a.add_argument("--stillness-window-s", type=float, default=0.2)
+    # The label command: build the marking page.
+    lb = sub.add_parser("label", help="Build a page for marking body points on release frames", allow_abbrev=False)
+    # Session file.
+    lb.add_argument("session", help="Path to a sessions/*.toml file")
+    # Output folder for the page.
+    lb.add_argument("--out", default="labels/latest", help="Folder for the marking page")
+    # The evaluate command: score models against the marks.
+    ev = sub.add_parser("evaluate", help="Compare pose models with your marks", allow_abbrev=False)
+    # Session file.
+    ev.add_argument("session", help="Path to a sessions/*.toml file")
+    # The downloaded marks.
+    ev.add_argument("--labels", required=True, help="Path to labels.json from the marking page")
+    # Which models to score (one or both).
+    ev.add_argument("--pose", nargs="+", choices=["yolo", "mediapipe"], default=["yolo", "mediapipe"])
+    # Optional model files for each.
+    ev.add_argument("--yolo-model", default=None)
+    ev.add_argument("--mediapipe-model", default=None)
+    # WillowCoach values for comparison.
+    ev.add_argument("--reference", default=str(ROOT / "config" / "willowcoach_reference.toml"))
     # Read the command line.
     args = parser.parse_args()
     # Run the chosen command.
     if args.command == "analyze":
         # Start the analysis.
         analyze(args)
+    # Build the marking page.
+    elif args.command == "label":
+        # Run it.
+        label(args)
+    # Score the models.
+    elif args.command == "evaluate":
+        # Run it.
+        evaluate_cmd(args)
 
 
 # Allows "python -m batlab.cli analyze ..." as well as the "batlab" command.

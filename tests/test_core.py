@@ -291,3 +291,24 @@ def test_eye_tilt_error_in_degrees():
     marks = {"eye_left_in_picture": [100, 10], "eye_right_in_picture": [110, 20]}
     # Tilt difference is 45 degrees.
     assert point_errors(kp, marks, front_on_sides("right"), 1.0)["eye tilt (deg)"] == pytest.approx(45.0)
+
+
+def test_stump_colour_found_even_next_to_bigger_yellow_shirt():
+    # OpenCV draws the test image.
+    import cv2
+    # Function under test.
+    from batlab.calibrate import find_stump_hue
+    # Dark 1080 x 1920 frame.
+    img = np.full((1920, 1080, 3), 40, dtype=np.uint8)
+    # A big, bright yellow "shirt" (hue about 27), larger than all the stumps together.
+    shirt = cv2.cvtColor(np.uint8([[[27, 180, 240]]]), cv2.COLOR_HSV2BGR)[0, 0].tolist()
+    # Draw it.
+    cv2.rectangle(img, (600, 700), (800, 900), shirt, -1)
+    # Lime stump colour as measured on the 19 Nov clips (hue 35, saturation 100, brightness 230).
+    lime = cv2.cvtColor(np.uint8([[[35, 100, 230]]]), cv2.COLOR_HSV2BGR)[0, 0].tolist()
+    # Three 12 px wide, 150 px tall stumps, 22 px apart.
+    for x in (550, 572, 594):
+        # Draw one stump.
+        cv2.rectangle(img, (x, 900), (x + 11, 1050), lime, -1)
+    # The stump colour should be found near 35, not the shirt's 27.
+    assert abs(find_stump_hue([img]) - 35) <= 3

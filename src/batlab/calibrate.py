@@ -26,33 +26,30 @@ class Calibration:
     frames_used: int
 
 
-def stump_boxes(frame: np.ndarray) -> list[tuple[int, int, int, int]]:
-    """Return (x, y, w, h) boxes of tall, thin red/orange shapes: the stump candidates."""
+def stump_boxes(frame: np.ndarray, hue: int) -> list[tuple[int, int, int, int]]:
+    """Return (x, y, w, h) boxes of tall, thin shapes of the given hue: the stump candidates.
+
+    `hue` is the stumps' colour on OpenCV's 0-180 scale (red about 0, orange about 10,
+    yellow about 25, lime green about 35); `find_stump_hue` works it out from the video.
+    """
     # HSV separates colour (hue) from brightness, which makes colour masks reliable.
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     # Split into hue, saturation and brightness channels (as signed ints for the maths below).
     h, s, v = (c.astype(np.int16) for c in cv2.split(hsv))
-    # Red sits at both ends of OpenCV's 0-180 hue scale; shift 170-180 to -10..0 so red is one range.
-    h = np.where(h >= 170, h - 180, h)
-    # Strict mask: bright, saturated pixels. Stumps measured brightness 220+; skin measured 100-180,
-    # so skin is left out, and the gaps between neighbouring stumps stay empty.
-    bright = (s >= 115) & (v >= 180) & (h >= -10) & (h <= 25)
-    # Too few such pixels means no stumps in this frame.
-    if bright.sum() < 50:
-        # Nothing to return.
-        return []
-    # Stump colour varies with lighting and camera, so find it from the frame: the most common
-    # hue among the bright, saturated pixels.
-    hist = np.bincount(h[bright] + 10, minlength=36)
-    # Convert the histogram's peak position back to a hue value.
-    stump_hue = int(np.argmax(hist)) - 10
+    # Hue distance to the stump colour. Hue wraps around (179 is next to 0), so take the shorter way.
+    dh = np.abs(h - hue)
+    # Shorter of the two ways round the hue circle.
+    dh = np.minimum(dh, 180 - dh)
     # Pixels within 5 hue steps of the stump colour.
-    near_hue = np.abs(h - stump_hue) <= 5
-    # Strict mask finds where each stump is sideways.
-    mask = (bright & near_hue).astype(np.uint8) * 255
+    near_hue = dh <= 5
+    # Strict mask: bright, fairly saturated pixels of that colour. Measured: stumps brightness 220+
+    # and saturation 85-125 (lime) or 115+ (orange); skin brightness 100-180; turf saturation 45-70.
+    # So skin and turf are left out, and the gaps between neighbouring stumps stay empty.
+    mask = ((s >= 85) & (v >= 180) & near_hue).astype(np.uint8) * 255
     # Relaxed mask catches the slightly darker stump tops and paler bases; used only to extend
     # each stump up and down, never to find stumps, because it joins neighbouring stumps.
-    relaxed = (s >= 60) & (v >= 120) & near_hue
+    # Saturation 75+ keeps lime-green turf (saturation up to about 70) out of it.
+    relaxed = (s >= 75) & (v >= 150) & near_hue
     # Label each connected group of mask pixels and get its bounding box.
     n, _, stats, _ = cv2.connectedComponentsWithStats(mask)
     # Smallest stump height allowed: 3% of the frame height (drops balls and specks).
@@ -153,6 +150,31 @@ def cluster_stumps(boxes: list[tuple[int, int, int, int]]) -> list[list[tuple[in
     return best
 
 
+def find_stump_hue(frames: list[np.ndarray]) -> int | None:
+    """Work out the stumps' colour: the hue whose tall, thin shapes best form one set of 3 stumps.
+
+    Picking the most common bright colour does not work: a yellow shirt covers more of the frame
+    than lime-green stumps. So every hue is tried, and the one that gives a valid 3-stump set seen
+    in the most frames wins.
+    """
+    # Best hue so far and its score.
+    best_hue, best_score = None, 0
+    # Try every hue in steps of 3 across OpenCV's 0-180 scale.
+    for hue in range(0, 180, 3):
+        # Stump candidates of this colour in all sample frames.
+        boxes = [b for f in frames for b in stump_boxes(f, hue)]
+        # Group them; a valid set gives 3 groups (cluster_stumps returns [] otherwise).
+        groups = cluster_stumps(boxes) if boxes else []
+        # Score: how many boxes the 3-stump set is built from (more frames agreeing = more certain).
+        score = sum(len(g) for g in groups) if len(groups) == 3 else 0
+        # Keep the best.
+        if score > best_score:
+            # Store it.
+            best_hue, best_score = hue, score
+    # None if no hue gave a stump set.
+    return best_hue
+
+
 def calibrate_front(info: VideoInfo, stump_height_cm: float, step_s: float = 0.5,
                     scan_width: int = 1080, max_frames: int = 60) -> Calibration:
     """Measure the stumps across the clip and combine the views into one calibration.
@@ -169,16 +191,26 @@ def calibrate_front(info: VideoInfo, stump_height_cm: float, step_s: float = 0.5
     # Long clips would mean hundreds of 4K frames to decode without improving the result, so
     # widen the step to keep at most max_frames samples spread evenly across the clip.
     step_s = max(step_s, info.duration / max_frames)
+    # Times of the frames to sample.
+    times = np.arange(0.0, info.duration - 0.1, step_s)
+    # 8 of them, spread evenly, are enough to work out the stump colour.
+    sample = [read_frames(info, float(t), 1, scale_width=scan_width) for t in times[:: max(1, len(times) // 8)]]
+    # Find the colour (skipping any empty reads at the clip's end).
+    hue = find_stump_hue([f[0] for f in sample if len(f)])
+    # No colour gave a stump set: stop with a clear message.
+    if hue is None:
+        # Explain the likely cause.
+        raise RuntimeError("Could not find 3 stumps of one colour; check all three are in frame.")
     # Sample one frame every step_s seconds across the clip.
-    for t in np.arange(0.0, info.duration - 0.1, step_s):
+    for t in times:
         # Read a single downscaled frame (fast).
         frame = read_frames(info, float(t), 1, scale_width=scan_width)
         # Skip if the read returned nothing (end of clip).
         if len(frame) == 0:
             # Next time point.
             continue
-        # Stump candidates in this frame.
-        found = stump_boxes(frame[0])
+        # Stump candidates of that colour in this frame.
+        found = stump_boxes(frame[0], hue)
         # Count the frame if anything was found.
         frames_used += bool(found)
         # Add them to the pool.

@@ -1,0 +1,16 @@
+[player]
+name = "Rohan"
+batting_hand = "right"
+
+[session]
+date = "2026-11-19"
+delivery_source = "machine"
+machine_speed_mph = 62.0
+split = "tune"
+
+[calibration]
+stump_height_cm = 71.1
+
+[videos]
+front = "/Users/rohankumar/Desktop/clips/IMG_0552.MOV"
+side = ""

@@ -38,23 +38,29 @@ Outputs in the `--out` folder:
 - `report.json`: everything above plus calibration and timings
 
 ## Checking accuracy against your own marks
-1. Build the marking page (9 frames: each release, plus 0.1 s and 0.2 s before it):
+1. Create a session file for each clip (date comes from the video). Add `--split test` for about
+   1 in 5 clips: those are held back and only used to measure final accuracy.
 ```bash
-batlab label sessions/2026-11-10_front.toml --out labels/2026-11-10
+batlab new-session ~/Desktop/clips/IMG_0478.MOV --speed 62
 ```
-2. Open `labels/2026-11-10/index.html` in a browser. Click the 6 points on each frame, using the
-   zoomed view for precision. Press S for a point you cannot see. Click "Download labels.json"
-   and move the file into `labels/2026-11-10/`.
-3. Score both models against your marks:
+2. Build a marking page per session (9 frames each: every release, plus 0.1 s and 0.2 s before):
 ```bash
-batlab evaluate sessions/2026-11-10_front.toml --labels labels/2026-11-10/labels.json
+batlab label sessions/2026-11-10_IMG_0478.toml --out labels/2026-11-10_IMG_0478
 ```
-This prints and saves `evaluation.md`: how far each model's points are from your marks (cm), and
-each check worked out from your marks next to each model's value and WillowCoach's.
+3. Open each `index.html`, click the 6 points on every frame (zoomed view helps; S = can't see it),
+   click "Download labels.json" and move it into that clip's labels folder.
+4. Score both models on every marked clip at once:
+```bash
+batlab evaluate --labels labels/*/labels.json
+```
+`labels/evaluation.md` shows, separately for the test and tune sets, each model's average point
+error with PASS/FAIL against `config/accuracy_targets.toml`, how often each model found the batter,
+and every check worked out from your marks next to each model and WillowCoach.
 
 ## Settings
 - `config/targets.toml`: grading ranges (edit to match your coaching)
 - `config/willowcoach_reference.toml`: values from the WillowCoach review, for comparison
+- `config/accuracy_targets.toml`: how close the engine must be to your marks (agreed 20 Nov 2026)
 
 ## Tests
 ```bash

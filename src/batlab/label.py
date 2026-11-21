@@ -31,7 +31,8 @@ POINTS = [
 FRAMES_BEFORE = (12, 6, 0)
 
 
-def build_label_page(info: VideoInfo, cal: Calibration, release_frames: list[int], out: Path) -> Path:
+def build_label_page(info: VideoInfo, cal: Calibration, release_frames: list[int], out: Path,
+                     session_path: str | None = None) -> Path:
     """Write index.html with every frame to mark embedded in it; return its path."""
     # Make the output folder.
     out.mkdir(parents=True, exist_ok=True)
@@ -66,8 +67,10 @@ def build_label_page(info: VideoInfo, cal: Calibration, release_frames: list[int
                 # The image itself as text.
                 "jpg": base64.b64encode(jpg.tobytes()).decode(),
             })
-    # Everything the page needs, as one JSON block.
-    data = {"video": info.path.name, "points": POINTS, "frames": frames}
+    # Everything the page needs, as one JSON block. The session path is saved into labels.json,
+    # so the evaluation knows which clip and settings each set of marks belongs to.
+    data = {"video": info.path.name, "session": str(Path(session_path).resolve()) if session_path else None,
+            "points": POINTS, "frames": frames}
     # Fill the template and write the page.
     page = out / "index.html"
     # The data replaces a placeholder inside the page's script.
@@ -270,8 +273,8 @@ document.addEventListener("keydown", e => {
 });
 // Download all marks as labels.json.
 document.getElementById("save").onclick = () => {
-  // The file's contents: video name, point order, and each frame's marks (images left out).
-  const out = { video: DATA.video, points: DATA.points.map(([k]) => k),
+  // The file's contents: video and session, point order, and each frame's marks (images left out).
+  const out = { video: DATA.video, session: DATA.session, points: DATA.points.map(([k]) => k),
     frames: DATA.frames.map((f, i) => ({ delivery: f.delivery, frame: f.frame,
       frames_before_release: f.frames_before_release, points: labels[i] })) };
   // A temporary link pointing at the file contents.

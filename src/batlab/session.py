@@ -25,6 +25,8 @@ class Session:
     side_video: Path | None
     # Machine speed in mph, or None for bowler sessions.
     machine_speed_mph: float | None
+    # "tune" (used to improve the engine) or "test" (held back, used only to measure final accuracy).
+    split: str = "tune"
 
 
 def load_session(path: str | Path) -> Session:
@@ -57,6 +59,8 @@ def load_session(path: str | Path) -> Session:
         side_video=Path(videos["side"]) if videos.get("side") else None,
         # Machine speed if present, otherwise None.
         machine_speed_mph=raw["session"].get("machine_speed_mph"),
+        # Tune or test set; sessions without the setting count as tune.
+        split=raw["session"].get("split", "tune").lower(),
     )
 
 

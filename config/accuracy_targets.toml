@@ -1,0 +1,15 @@
+# How close the engine's points must be to hand-marked points, averaged over the test set.
+# Agreed 20 Nov 2026. Hand marks themselves vary by about 1-2 cm, so tighter targets cannot be verified.
+# Rule behind the numbers: the error must be well below the gap between grades in targets.toml.
+
+# Distance from the marked eye midpoint, cm.
+"head (eye midpoint)" = 2.0
+# Distance from the marked centre of the hands, cm.
+hands = 3.0
+# Distance from the marked front knee, cm.
+"front knee" = 3.0
+# Sideways distance from the marked shoe edges, cm.
+"feet left edge (sideways)" = 3.0
+"feet right edge (sideways)" = 3.0
+# Difference in eye-line tilt, degrees.
+"eye tilt (deg)" = 2.0

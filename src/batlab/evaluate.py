@@ -69,6 +69,17 @@ def point_errors(kp: Keypoints, marks: dict, sides: Sides, cm_per_px: float) -> 
     a, b = marks.get("eye_left_in_picture"), marks.get("eye_right_in_picture")
     # Midpoint of the marked eyes, if both were marked.
     out["head (eye midpoint)"] = dist(me, (np.array(a) + np.array(b)) / 2 if a and b else None)
+    # Eye-line tilt difference in degrees, comparing eyes in picture order (label swaps do not matter).
+    def tilt(p, q) -> float:
+        """Angle of the line from the left-in-picture eye to the right one, degrees."""
+        # Sort the two points left to right.
+        l, r = sorted([np.asarray(p, float), np.asarray(q, float)], key=lambda v: v[0])
+        # Angle from the horizontal; image y grows downward, which flips sign the same way for both.
+        return float(np.degrees(np.arctan2(r[1] - l[1], r[0] - l[0])))
+    # Model eyes.
+    le, re_ = kp.point("left_eye"), kp.point("right_eye")
+    # Difference when both the model's and the marked eyes exist.
+    out["eye tilt (deg)"] = abs(tilt(le, re_) - tilt(a, b)) if le is not None and re_ is not None and a and b else None
     # Model hands: midpoint of wrists, or the one visible wrist (as in the checks).
     hands = kp.midpoint("left_wrist", "right_wrist")
     # Fall back to a single wrist.
@@ -172,30 +183,75 @@ def evaluate(info: VideoInfo, cal: Calibration, sides: Sides, labels: dict, mode
             if mv is not None:
                 # Append to the list.
                 values[s]["head_movement"].append(mv)
+    # Count of marked frames and of frames where each model found the batter.
+    found = {m: sum(1 for e in by_delivery.values() for k in e[m].values() if k is not None) for m in models}
+    # Return the raw lists so results from several clips can be combined before averaging.
+    return {"errors": errors, "values": values, "frames": len(labels["frames"]), "found": found}
+
+
+def combine(raws: list[dict]) -> dict:
+    """Merge raw results from several clips and average them."""
+    # Model names from the first clip (every clip is run with the same models).
+    models = list(raws[0]["errors"])
+    # Merged error lists per model and point.
+    errors = {m: {} for m in models}
+    # Merged value lists per source and check.
+    values = {s: {} for s in raws[0]["values"]}
+    # Add each clip's lists.
+    for r in raws:
+        # Errors.
+        for m in models:
+            # Each point's list.
+            for p, v in r["errors"][m].items():
+                # Extend the merged list.
+                errors[m].setdefault(p, []).extend(v)
+        # Check values.
+        for src, cs in r["values"].items():
+            # Each check's list.
+            for c, v in cs.items():
+                # Extend the merged list.
+                values[src].setdefault(c, []).extend(v)
     # Average error per point, with how many frames it is based on.
     mean_err = {m: {p: (float(np.mean(v)), len(v)) for p, v in pts.items()} for m, pts in errors.items()}
     # Average value per check and source.
     mean_val = {s: {c: (float(np.mean(v)) if v else None, len(v)) for c, v in cs.items()} for s, cs in values.items()}
-    # Return both tables.
-    return {"point_error_cm": mean_err, "check_values": mean_val}
+    # Detection rate per model.
+    found = {m: (sum(r["found"][m] for r in raws), sum(r["frames"] for r in raws)) for m in models}
+    # Return the averaged tables.
+    return {"point_error_cm": mean_err, "check_values": mean_val, "found": found, "clips": len(raws)}
 
 
-def format_report(result: dict, reference: dict | None) -> str:
-    """Markdown tables of point errors and check values."""
+def format_report(result: dict, reference: dict | None, targets: dict | None = None, title: str = "") -> str:
+    """Markdown tables of point errors (with pass/fail against targets) and check values."""
     # Model names in order.
     models = list(result["point_error_cm"])
     # Every point name any model was scored on.
     points = sorted({p for m in models for p in result["point_error_cm"][m]})
-    # First table: how far each model's points are from your marks.
-    lines = ["## Point error vs your marks (cm, lower is better)", "",
-             "| Point | " + " | ".join(models) + " |", "|---|" + "---|" * len(models)]
+    # Section heading with the amount of data behind it.
+    lines = [f"# {title}", "", f"Clips: {result['clips']}. Batter found: " +
+             ", ".join(f"{m} {f}/{n} frames" for m, (f, n) in result["found"].items()), ""]
+    # First table: how far each model's points are from your marks, and whether that meets the target.
+    lines += ["## Point error vs your marks (lower is better)", "",
+              "| Point | Target | " + " | ".join(models) + " |", "|---|---|" + "---|" * len(models)]
     # One row per point.
     for p in points:
-        # "mean (n)" per model, or a dash.
-        cells = [f"{result['point_error_cm'][m][p][0]:.1f} ({result['point_error_cm'][m][p][1]})"
-                 if p in result["point_error_cm"][m] else "-" for m in models]
+        # This point's target, if one is set.
+        t = targets.get(p) if targets else None
+
+        def cell(m: str) -> str:
+            """'mean (n) PASS/FAIL' for one model, or a dash."""
+            # No result for this model and point.
+            if p not in result["point_error_cm"][m]:
+                # Dash.
+                return "-"
+            # Mean error and frame count.
+            v, n = result["point_error_cm"][m][p]
+            # Pass or fail against the target, if there is one.
+            mark = "" if t is None else (" PASS" if v <= t else " FAIL")
+            # Formatted cell.
+            return f"{v:.1f} ({n}){mark}"
         # Add the row.
-        lines.append(f"| {p} | " + " | ".join(cells) + " |")
+        lines.append(f"| {p} | {'-' if t is None else t} | " + " | ".join(cell(m) for m in models) + " |")
     # Second table: check values from your marks next to each model and WillowCoach.
     lines += ["", "## Check values on release frames", "",
               "| Check | Your marks | " + " | ".join(models) + " | WillowCoach |",

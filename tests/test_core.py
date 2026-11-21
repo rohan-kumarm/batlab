@@ -261,3 +261,33 @@ def test_point_errors_ignore_eye_label_swaps():
     assert err["head (eye midpoint)"] == 0.0
     # One visible wrist 4 px below the marked hands: 4 cm.
     assert err["hands"] == 4.0
+
+
+def test_combine_averages_across_clips():
+    # Combiner under test.
+    from batlab.evaluate import combine
+    # Two clips' raw results: hands errors 2 and 4 cm in clip A, 6 cm in clip B.
+    a = {"errors": {"yolo": {"hands": [2.0, 4.0]}}, "values": {"marks": {"eyes_level": [1.0]}, "yolo": {"eyes_level": [2.0]}},
+         "frames": 9, "found": {"yolo": 9}}
+    # Second clip, where the batter was found in 7 of 9 frames.
+    b = {"errors": {"yolo": {"hands": [6.0]}}, "values": {"marks": {"eyes_level": [3.0]}, "yolo": {"eyes_level": [4.0]}},
+         "frames": 9, "found": {"yolo": 7}}
+    # Merge.
+    r = combine([a, b])
+    # Mean of 2, 4 and 6 is 4, over 3 frames.
+    assert r["point_error_cm"]["yolo"]["hands"] == (4.0, 3)
+    # Mean of the marked eyes_level values 1 and 3 is 2.
+    assert r["check_values"]["marks"]["eyes_level"] == (2.0, 2)
+    # Detection: 16 of 18 frames.
+    assert r["found"]["yolo"] == (16, 18)
+
+
+def test_eye_tilt_error_in_degrees():
+    # Error function under test.
+    from batlab.evaluate import point_errors
+    # Model eyes level; marked eyes tilted 45 degrees (10 px across, 10 px down).
+    kp = _pose({"left_eye": (100.0, 10.0), "right_eye": (110.0, 10.0)})
+    # Marks.
+    marks = {"eye_left_in_picture": [100, 10], "eye_right_in_picture": [110, 20]}
+    # Tilt difference is 45 degrees.
+    assert point_errors(kp, marks, front_on_sides("right"), 1.0)["eye tilt (deg)"] == pytest.approx(45.0)

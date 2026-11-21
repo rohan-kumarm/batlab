@@ -139,3 +139,20 @@ def read_audio(path: str | Path, sample_rate: int = 48000) -> np.ndarray:
     )
     # Interpret the bytes as float32 samples.
     return np.frombuffer(raw, dtype=np.float32)
+
+
+def creation_date(path: str | Path) -> str | None:
+    """Recording date as YYYY-MM-DD from the file's metadata, or None if it has none."""
+    # Ask ffprobe for the container's tags only.
+    out = subprocess.run(
+        # -show_entries format_tags limits the output to the metadata tags.
+        ["ffprobe", "-v", "error", "-print_format", "json", "-show_entries", "format_tags", str(path)],
+        # Capture the text; no error if ffprobe fails (the date is optional).
+        capture_output=True, text=True,
+    ).stdout
+    # Parse the tags, or use an empty dict if there is no output.
+    tags = json.loads(out or "{}").get("format", {}).get("tags", {})
+    # iPhones store the local recording time here; other cameras use creation_time.
+    stamp = tags.get("com.apple.quicktime.creationdate") or tags.get("creation_time")
+    # The first 10 characters are the date, e.g. "2026-11-10".
+    return stamp[:10] if stamp else None

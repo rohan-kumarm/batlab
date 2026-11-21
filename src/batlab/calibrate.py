@@ -154,7 +154,7 @@ def cluster_stumps(boxes: list[tuple[int, int, int, int]]) -> list[list[tuple[in
 
 
 def calibrate_front(info: VideoInfo, stump_height_cm: float, step_s: float = 0.5,
-                    scan_width: int = 1080) -> Calibration:
+                    scan_width: int = 1080, max_frames: int = 60) -> Calibration:
     """Measure the stumps across the clip and combine the views into one calibration.
 
     The batter's pads hide part of the stumps in most frames, but the camera and stumps do
@@ -166,6 +166,9 @@ def calibrate_front(info: VideoInfo, stump_height_cm: float, step_s: float = 0.5
     boxes: list[tuple[int, int, int, int]] = []
     # Number of frames that contained at least one stump box.
     frames_used = 0
+    # Long clips would mean hundreds of 4K frames to decode without improving the result, so
+    # widen the step to keep at most max_frames samples spread evenly across the clip.
+    step_s = max(step_s, info.duration / max_frames)
     # Sample one frame every step_s seconds across the clip.
     for t in np.arange(0.0, info.duration - 0.1, step_s):
         # Read a single downscaled frame (fast).

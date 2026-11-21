@@ -18,8 +18,18 @@ class ReleaseParams:
     window_s: float = 0.003
     # A sound must be this many times louder than the clip's typical background level.
     min_ratio_to_floor: float = 20.0
-    # It must also reach this fraction of the loudest sound in the clip (drops softer knocks).
-    min_fraction_of_max: float = 0.5
+    # A sound this loud (fraction of the clip's loudest sound) counts as a release on its own.
+    strong_fraction_of_max: float = 0.5
+    # Quieter sounds down to this fraction are considered too, but only accepted as a release if
+    # a second sharp sound (the bat) follows within the pair window below. On the 19 Nov clip
+    # IMG_0551 one machine sound reached 0.497 of the loudest (a bat hit), so a single 0.5 rule
+    # took the bat as the release.
+    min_fraction_of_max: float = 0.3
+    # Machine-to-bat time range (s) that confirms a quieter sound as a release. Measured: 0.70-0.75 s
+    # at 60-70 mph; the range allows roughly 50 to 80 mph.
+    pair_min_s: float = 0.55
+    # Upper end of the confirming range.
+    pair_max_s: float = 0.9
     # Two sounds closer than this (s) are treated as one sound.
     min_peak_spacing_s: float = 0.15
     # After a release, sounds within this many seconds belong to the same delivery (bat, net).
@@ -63,6 +73,8 @@ def find_releases(audio: np.ndarray, sr: int, p: ReleaseParams = ReleaseParams()
     floor = float(np.median(env))
     # The loudness a candidate must exceed: the larger of the two rules.
     threshold = max(floor * p.min_ratio_to_floor, float(env.max()) * p.min_fraction_of_max)
+    # Loudness at which a sound counts as a release without needing a bat sound after it.
+    strong = float(env.max()) * p.strong_fraction_of_max
     # Find local loudness peaks above the threshold, at least min_peak_spacing_s apart.
     peaks, _ = signal.find_peaks(env, height=threshold, distance=int(p.min_peak_spacing_s * sr))
     # Collected results.
@@ -77,6 +89,14 @@ def find_releases(audio: np.ndarray, sr: int, p: ReleaseParams = ReleaseParams()
         if t < busy_until:
             # Go to the next peak.
             continue
+        # A quieter sound needs a second sound 0.55-0.9 s later (machine, then bat) to count.
+        if env[pk] < strong:
+            # Is any later peak inside the machine-to-bat range?
+            paired = any(p.pair_min_s <= (later - pk) / sr <= p.pair_max_s for later in peaks[i + 1:])
+            # Without one it is probably a stray knock, not a delivery.
+            if not paired:
+                # Go to the next peak.
+                continue
         # Find the onset: step back from the peak while loudness stays above 20% of the peak.
         start = pk
         # Stop at the clip start or when loudness drops below 20% of this peak.

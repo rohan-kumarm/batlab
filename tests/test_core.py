@@ -312,3 +312,31 @@ def test_stump_colour_found_even_next_to_bigger_yellow_shirt():
         cv2.rectangle(img, (x, 900), (x + 11, 1050), lime, -1)
     # The stump colour should be found near 35, not the shirt's 27.
     assert abs(find_stump_hue([img]) - 35) <= 3
+
+
+def test_quiet_machine_sound_counts_when_bat_follows():
+    # Fixed seed for repeatable noise.
+    rng = np.random.default_rng(1)
+    # Sample rate.
+    sr = 48000
+    # Eight seconds of faint background noise.
+    audio = rng.normal(0, 1e-4, 8 * sr).astype(np.float32)
+
+    def click(t: float, size: float) -> None:
+        """Add a 2 ms burst of noise at time t with the given loudness."""
+        # Start sample.
+        s = int(t * sr)
+        # Add the burst.
+        audio[s:s + 96] += rng.normal(0, size, 96)
+
+    # Delivery: a quiet machine sound (0.12) at 1.0 s and a much louder bat hit (0.3) 0.7 s later,
+    # as in IMG_0551 delivery 4, where the machine reached just under half the bat's loudness.
+    click(1.0, 0.12)
+    # The bat hit.
+    click(1.7, 0.3)
+    # A stray knock of similar quietness at 5.0 s with nothing after it: not a delivery.
+    click(5.0, 0.12)
+    # Run detection.
+    rel = find_releases(audio, sr)
+    # One delivery, released at the quiet machine sound, not at the bat hit.
+    assert len(rel) == 1 and abs(rel[0].time_s - 1.0) < 0.005

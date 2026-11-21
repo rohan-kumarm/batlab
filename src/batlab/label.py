@@ -22,7 +22,7 @@ POINTS = [
     ("eye_left_in_picture", "Eye on the LEFT side of the picture"),
     ("eye_right_in_picture", "Eye on the RIGHT side of the picture"),
     ("hands", "Centre of your hands on the bat handle"),
-    ("front_knee", "Centre of your front knee (the pad nearest the stumps)"),
+    ("front_knee", "Centre of your front knee (the leg whose shoe is lower in the picture)"),
     ("feet_left_edge", "Left-most point of your shoes"),
     ("feet_right_edge", "Right-most point of your shoes"),
 ]

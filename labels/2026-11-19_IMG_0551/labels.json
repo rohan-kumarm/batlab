@@ -4,6 +4,8 @@
   "points": [
     "eye_left_in_picture",
     "eye_right_in_picture",
+    "grille_left_end",
+    "grille_right_end",
     "hands",
     "front_knee",
     "feet_left_edge",
@@ -38,6 +40,14 @@
         "feet_right_edge": [
           1317.7,
           2167.8
+        ],
+        "grille_left_end": [
+          1131.9,
+          1526.9
+        ],
+        "grille_right_end": [
+          1230.4,
+          1523.4
         ]
       }
     },
@@ -54,21 +64,29 @@
           1199.8,
           1509.6
         ],
+        "grille_left_end": [
+          1131.4,
+          1525.9
+        ],
+        "grille_right_end": [
+          1225.8,
+          1523.4
+        ],
         "hands": [
           1182.9,
-          1740.7
+          1741.3
         ],
         "front_knee": [
-          1231.9,
+          1227.8,
           1948.9
         ],
         "feet_left_edge": [
-          1155.4,
-          2154
+          1156.4,
+          2154.6
         ],
         "feet_right_edge": [
-          1316.1,
-          2169.4
+          1318.2,
+          2170.9
         ]
       }
     },
@@ -100,6 +118,14 @@
         "feet_right_edge": [
           1319.2,
           2169.4
+        ],
+        "grille_left_end": [
+          1124.8,
+          1530.5
+        ],
+        "grille_right_end": [
+          1219.7,
+          1525.9
         ]
       }
     },
@@ -131,6 +157,14 @@
         "feet_right_edge": [
           1336,
           2173.9
+        ],
+        "grille_left_end": [
+          1142.6,
+          1536.6
+        ],
+        "grille_right_end": [
+          1232.4,
+          1533.1
         ]
       }
     },
@@ -162,6 +196,14 @@
         "feet_right_edge": [
           1331.4,
           2175.5
+        ],
+        "grille_left_end": [
+          1140.1,
+          1539.2
+        ],
+        "grille_right_end": [
+          1232.4,
+          1532.6
         ]
       }
     },
@@ -193,6 +235,14 @@
         "feet_right_edge": [
           1333,
           2170.9
+        ],
+        "grille_left_end": [
+          1139,
+          1539.7
+        ],
+        "grille_right_end": [
+          1228.4,
+          1534.1
         ]
       }
     },
@@ -224,6 +274,14 @@
         "feet_right_edge": [
           1339.1,
           2173.9
+        ],
+        "grille_left_end": [
+          1151.8,
+          1523.9
+        ],
+        "grille_right_end": [
+          1244.7,
+          1518.8
         ]
       }
     },
@@ -255,6 +313,14 @@
         "feet_right_edge": [
           1337.6,
           2173.9
+        ],
+        "grille_left_end": [
+          1149.3,
+          1526.9
+        ],
+        "grille_right_end": [
+          1243.7,
+          1523.4
         ]
       }
     },
@@ -286,6 +352,14 @@
         "feet_right_edge": [
           1339.1,
           2173.9
+        ],
+        "grille_left_end": [
+          1146.2,
+          1530
+        ],
+        "grille_right_end": [
+          1241.6,
+          1529.5
         ]
       }
     },
@@ -317,6 +391,14 @@
         "feet_right_edge": [
           1340.6,
           2178.5
+        ],
+        "grille_left_end": [
+          1160,
+          1521.8
+        ],
+        "grille_right_end": [
+          1254.9,
+          1520.3
         ]
       }
     },
@@ -348,6 +430,14 @@
         "feet_right_edge": [
           1340.6,
           2175.5
+        ],
+        "grille_left_end": [
+          1160,
+          1525.4
+        ],
+        "grille_right_end": [
+          1253.4,
+          1524.9
         ]
       }
     },
@@ -379,6 +469,14 @@
         "feet_right_edge": [
           1342.2,
           2178.5
+        ],
+        "grille_left_end": [
+          1158.9,
+          1529.5
+        ],
+        "grille_right_end": [
+          1251.8,
+          1528.5
         ]
       }
     },
@@ -410,6 +508,14 @@
         "feet_right_edge": [
           1331.4,
           2175.5
+        ],
+        "grille_left_end": [
+          1151.8,
+          1528.5
+        ],
+        "grille_right_end": [
+          1245.7,
+          1526.4
         ]
       }
     },
@@ -441,6 +547,14 @@
         "feet_right_edge": [
           1326.8,
           2178.5
+        ],
+        "grille_left_end": [
+          1148.7,
+          1533.1
+        ],
+        "grille_right_end": [
+          1243.7,
+          1529.5
         ]
       }
     },
@@ -472,6 +586,14 @@
         "feet_right_edge": [
           1331.4,
           2175.5
+        ],
+        "grille_left_end": [
+          1144.7,
+          1535.6
+        ],
+        "grille_right_end": [
+          1238,
+          1532.6
         ]
       }
     },
@@ -503,6 +625,14 @@
         "feet_right_edge": [
           1348.3,
           2175.5
+        ],
+        "grille_left_end": [
+          1170.7,
+          1523.9
+        ],
+        "grille_right_end": [
+          1261,
+          1519.8
         ]
       }
     },
@@ -534,6 +664,14 @@
         "feet_right_edge": [
           1349.8,
           2175.5
+        ],
+        "grille_left_end": [
+          1166.1,
+          1526.4
+        ],
+        "grille_right_end": [
+          1258,
+          1521.8
         ]
       }
     },
@@ -565,6 +703,14 @@
         "feet_right_edge": [
           1352.9,
           2180.1
+        ],
+        "grille_left_end": [
+          1161.5,
+          1529.5
+        ],
+        "grille_right_end": [
+          1254.9,
+          1523.4
         ]
       }
     },
@@ -596,6 +742,14 @@
         "feet_right_edge": [
           1337.6,
           2178.5
+        ],
+        "grille_left_end": [
+          1150.8,
+          1526.4
+        ],
+        "grille_right_end": [
+          1242.6,
+          1521.8
         ]
       }
     },
@@ -627,6 +781,14 @@
         "feet_right_edge": [
           1337.6,
           2177
+        ],
+        "grille_left_end": [
+          1152.3,
+          1528
+        ],
+        "grille_right_end": [
+          1242.6,
+          1523.4
         ]
       }
     },
@@ -658,6 +820,14 @@
         "feet_right_edge": [
           1337.6,
           2178.5
+        ],
+        "grille_left_end": [
+          1149.3,
+          1529.5
+        ],
+        "grille_right_end": [
+          1241.1,
+          1524.9
         ]
       }
     }

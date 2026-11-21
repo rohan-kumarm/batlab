@@ -13,3 +13,6 @@ hands = 3.0
 "feet right edge (sideways)" = 3.0
 # Difference in eye-line tilt, degrees.
 "eye tilt (deg)" = 2.0
+# Model eye-line tilt against the tilt of the marked helmet grille bar, degrees. Added 21 Nov 2026:
+# eyes are hidden under the helmet peak at 4K, so the grille gives the true head tilt.
+"head tilt vs helmet marks (deg)" = 2.0

@@ -19,8 +19,12 @@ from .video import VideoInfo, read_frames
 # Eyes and feet are named by picture side, not body side, so marking never depends on
 # knowing which leg or eye is which.
 POINTS = [
-    ("eye_left_in_picture", "Eye on the LEFT side of the picture"),
-    ("eye_right_in_picture", "Eye on the RIGHT side of the picture"),
+    ("eye_left_in_picture", "Eye on the LEFT side of the picture (centre of the dark band under the peak)"),
+    ("eye_right_in_picture", "Eye on the RIGHT side of the picture (centre of the dark band under the peak)"),
+    # The grille's top bar is about 4 times wider than the gap between the eyes and clearly visible,
+    # so its two ends give head tilt about 4 times more precisely than the eyes can.
+    ("grille_left_end", "LEFT end of the top bar of the helmet grille (press X to zoom)"),
+    ("grille_right_end", "RIGHT end of the top bar of the helmet grille (press X to zoom)"),
     ("hands", "Centre of your hands on the bat handle"),
     ("front_knee", "Centre of your front knee (the leg whose shoe is lower in the picture)"),
     ("feet_left_edge", "Left-most point of your shoes"),
@@ -98,6 +102,8 @@ main { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:16px; paddin
 #wrap { position:relative; }
 /* The frame fits the window height; a crosshair pointer for precise clicks. */
 #img { display:block; max-height:calc(100vh - 32px); max-width:100%; cursor:crosshair; user-select:none; }
+/* Zoomed view: the image is shown 3 times larger and the frame area scrolls. */
+#img.zoomed { max-height:none; max-width:none; }
 /* A marked point: green circle centred on the click. */
 .dot { position:absolute; width:14px; height:14px; margin:-7px 0 0 -7px; border:2px solid #fff; border-radius:50%;
        background:var(--accent); pointer-events:none; }
@@ -137,6 +143,7 @@ kbd { background:#2d3540; border-radius:4px; padding:1px 5px; font-size:12px; }
     <div>
       <button id="undo">Undo <kbd>Z</kbd></button>
       <button id="skip">Can't see it <kbd>S</kbd></button>
+      <button id="zoom">Zoom 3x <kbd>X</kbd></button>
     </div>
     <div>
       <button id="prev">&larr; Frame <kbd>P</kbd></button>
@@ -144,6 +151,8 @@ kbd { background:#2d3540; border-radius:4px; padding:1px 5px; font-size:12px; }
     </div>
     <p class="muted" id="count"></p>
     <button class="primary" id="save">Download labels.json</button>
+    <button id="load">Import labels.json</button>
+    <input type="file" id="file" accept=".json,application/json" hidden>
     <p class="muted">Progress is kept in this browser if you close the page. When done, put
     labels.json in the same folder as this page.</p>
   </aside>
@@ -258,18 +267,59 @@ function undo() {
 // Record the next point as not visible.
 function skip() { const np = nextPoint(); if (np) { labels[fi][np[0]] = null; store(); render(); } }
 // Move d frames forward (or back), staying within the list.
-function go(d) { fi = Math.min(DATA.frames.length - 1, Math.max(0, fi + d)); render(); }
+function go(d) {
+  // Leave zoomed view first, so each frame starts at normal size.
+  if (img.classList.contains("zoomed")) {
+    // Normal size, centred again.
+    img.classList.remove("zoomed"); img.style.width = ""; document.getElementById("stage").style.justifyContent = "";
+  }
+  // Move to the new frame, staying within the list, and redraw.
+  fi = Math.min(DATA.frames.length - 1, Math.max(0, fi + d)); render();
+}
 
 // Connect the buttons.
 document.getElementById("undo").onclick = undo; document.getElementById("skip").onclick = skip;
 // Frame navigation buttons.
 document.getElementById("prev").onclick = () => go(-1); document.getElementById("next").onclick = () => go(1);
-// Keyboard shortcuts: Z undo, S skip, N next frame, P previous frame.
+// Last pointer position over the image, as a fraction of its width and height (for zooming there).
+let pointer = [0.5, 0.5];
+// Remember it on every move.
+img.addEventListener("mousemove", e => { pointer = [e.offsetX / img.clientWidth, e.offsetY / img.clientHeight]; });
+// Switch between the normal view and a 3x view centred on the pointer. Clicks are converted with
+// the image's shown size, so marking works the same way in both views, 3 times more precisely zoomed.
+function toggleZoom() {
+  // The scrolling frame area.
+  const stage = document.getElementById("stage");
+  // Turning zoom on.
+  if (!img.classList.contains("zoomed")) {
+    // Size to show: 3 times the current size.
+    const w = img.clientWidth * 3;
+    // Apply the zoomed style and width.
+    img.classList.add("zoomed"); img.style.width = w + "px";
+    // Align to the left edge: a centred image wider than the frame area would hang off the left,
+    // where scrolling cannot reach it.
+    stage.style.justifyContent = "flex-start";
+    // Scroll so the point that was under the pointer is in the middle of the frame area.
+    stage.scrollLeft = pointer[0] * w - stage.clientWidth / 2;
+    // Same vertically (height grows by the same factor).
+    stage.scrollTop = pointer[1] * img.clientHeight - stage.clientHeight / 2;
+  } else {
+    // Back to the normal view, centred again.
+    img.classList.remove("zoomed"); img.style.width = ""; stage.style.justifyContent = "";
+  }
+  // Redraw the dots at the new size.
+  render();
+}
+// Connect the zoom button.
+document.getElementById("zoom").onclick = toggleZoom;
+// Keyboard shortcuts: Z undo, S skip, N next frame, P previous frame, X zoom.
 document.addEventListener("keydown", e => {
   // Lowercase so Shift does not matter.
   const k = e.key.toLowerCase();
   // Run the matching action.
   if (k === "z") undo(); else if (k === "s") skip(); else if (k === "n") go(1); else if (k === "p") go(-1);
+  // Zoom in or out.
+  else if (k === "x") toggleZoom();
 });
 // Download all marks as labels.json.
 document.getElementById("save").onclick = () => {
@@ -283,6 +333,26 @@ document.getElementById("save").onclick = () => {
   a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }));
   // File name, then trigger the download.
   a.download = "labels.json"; a.click();
+};
+// Import marks from an earlier labels.json (for example to add newly added points to a marked clip).
+document.getElementById("load").onclick = () => document.getElementById("file").click();
+// When a file is chosen, read it and copy its marks onto the matching frames.
+document.getElementById("file").onchange = async e => {
+  // The chosen file, if any.
+  const f = e.target.files[0]; if (!f) return;
+  // Parse its text as JSON.
+  const old = JSON.parse(await f.text());
+  // Count frames whose marks were copied.
+  let n = 0;
+  // Match frames by their frame number in the video, so imports stay correct even if the page changed.
+  old.frames.forEach(of => {
+    // Position of the same frame on this page, or -1.
+    const i = DATA.frames.findIndex(df => df.frame === of.frame);
+    // Copy that frame's marks, keeping any marks already made on this page.
+    if (i >= 0) { labels[i] = Object.assign({}, of.points, labels[i]); n++; }
+  });
+  // Save, redraw and report.
+  store(); render(); alert(`Imported marks for ${n} of ${old.frames.length} frames.`);
 };
 // Dots are positioned in screen pixels, so redraw when the window size changes.
 window.addEventListener("resize", render);

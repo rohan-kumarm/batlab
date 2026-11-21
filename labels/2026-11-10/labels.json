@@ -1,8 +1,11 @@
 {
   "video": "IMG_0478.MOV",
+  "session": "/Users/rohankumar/Desktop/batlab/sessions/2026-11-10_front.toml",
   "points": [
     "eye_left_in_picture",
     "eye_right_in_picture",
+    "grille_left_end",
+    "grille_right_end",
     "hands",
     "front_knee",
     "feet_left_edge",
@@ -37,6 +40,14 @@
         "feet_right_edge": [
           1402.5,
           1761.2
+        ],
+        "grille_left_end": [
+          1180.5,
+          1072.1
+        ],
+        "grille_right_end": [
+          1281.4,
+          1066.4
         ]
       }
     },
@@ -68,6 +79,14 @@
         "feet_right_edge": [
           1397.5,
           1756.3
+        ],
+        "grille_left_end": [
+          1171.4,
+          1074.6
+        ],
+        "grille_right_end": [
+          1276.3,
+          1066.1
         ]
       }
     },
@@ -99,6 +118,14 @@
         "feet_right_edge": [
           1395.9,
           1751.3
+        ],
+        "grille_left_end": [
+          1166.4,
+          1074.6
+        ],
+        "grille_right_end": [
+          1269.6,
+          1069.5
         ]
       }
     },
@@ -130,6 +157,14 @@
         "feet_right_edge": [
           1407.4,
           1753
+        ],
+        "grille_left_end": [
+          1196.8,
+          1078
+        ],
+        "grille_right_end": [
+          1296.6,
+          1071.2
         ]
       }
     },
@@ -161,6 +196,14 @@
         "feet_right_edge": [
           1415.6,
           1757.9
+        ],
+        "grille_left_end": [
+          1190,
+          1078
+        ],
+        "grille_right_end": [
+          1288.2,
+          1072.9
         ]
       }
     },
@@ -192,6 +235,14 @@
         "feet_right_edge": [
           1413.9,
           1756.3
+        ],
+        "grille_left_end": [
+          1179.9,
+          1084.7
+        ],
+        "grille_right_end": [
+          1281.4,
+          1076.3
         ]
       }
     },
@@ -223,6 +274,14 @@
         "feet_right_edge": [
           1441.8,
           1754.6
+        ],
+        "grille_left_end": [
+          1200.2,
+          1072.9
+        ],
+        "grille_right_end": [
+          1303.4,
+          1069.5
         ]
       }
     },
@@ -254,6 +313,14 @@
         "feet_right_edge": [
           1422.1,
           1761.2
+        ],
+        "grille_left_end": [
+          1191.7,
+          1074.6
+        ],
+        "grille_right_end": [
+          1294.9,
+          1069.5
         ]
       }
     },
@@ -285,6 +352,14 @@
         "feet_right_edge": [
           1420.5,
           1762.8
+        ],
+        "grille_left_end": [
+          1186.7,
+          1078
+        ],
+        "grille_right_end": [
+          1286.5,
+          1071.2
         ]
       }
     }

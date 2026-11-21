@@ -340,3 +340,14 @@ def test_quiet_machine_sound_counts_when_bat_follows():
     rel = find_releases(audio, sr)
     # One delivery, released at the quiet machine sound, not at the bat hit.
     assert len(rel) == 1 and abs(rel[0].time_s - 1.0) < 0.005
+
+
+def test_model_head_tilt_compared_with_marked_grille():
+    # Error function under test.
+    from batlab.evaluate import point_errors
+    # Model eyes level (0 degrees).
+    kp = _pose({"left_eye": (100.0, 10.0), "right_eye": (130.0, 10.0)})
+    # Marked grille bar 100 px wide and 10 px higher on the right: atan(10/100) = 5.7 degrees.
+    marks = {"grille_left_end": [80, 30], "grille_right_end": [180, 20]}
+    # The model's level eye line is 5.7 degrees off the helmet's true tilt.
+    assert point_errors(kp, marks, front_on_sides("right"), 1.0)["head tilt vs helmet marks (deg)"] == pytest.approx(5.71, abs=0.01)

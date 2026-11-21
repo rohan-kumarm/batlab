@@ -16,7 +16,7 @@ from .video import VideoInfo, read_frames
 
 # Checks that can be worked out from the marked points (balance needs the whole body, so it is
 # left out; head stillness is handled separately because it compares frames).
-CHECKS = ["eyes_level", "head_on_middle_off", "front_knee_inside_off_stump", "hands_under_head"]
+CHECKS = ["eyes_level", "head_tilt_helmet", "head_on_middle_off", "front_knee_inside_off_stump", "hands_under_head"]
 
 
 def marks_to_keypoints(points: dict, sides: Sides) -> Keypoints:
@@ -80,6 +80,11 @@ def point_errors(kp: Keypoints, marks: dict, sides: Sides, cm_per_px: float) -> 
     le, re_ = kp.point("left_eye"), kp.point("right_eye")
     # Difference when both the model's and the marked eyes exist.
     out["eye tilt (deg)"] = abs(tilt(le, re_) - tilt(a, b)) if le is not None and re_ is not None and a and b else None
+    # Marked ends of the helmet grille's top bar: a longer, clearer line that tilts with the head.
+    g1, g2 = marks.get("grille_left_end"), marks.get("grille_right_end")
+    # The model's eye-line tilt against the marked helmet tilt: how well the engine's head tilt matches.
+    out["head tilt vs helmet marks (deg)"] = (abs(tilt(le, re_) - tilt(g1, g2))
+                                              if le is not None and re_ is not None and g1 and g2 else None)
     # Model hands: midpoint of wrists, or the one visible wrist (as in the checks).
     hands = kp.midpoint("left_wrist", "right_wrist")
     # Fall back to a single wrist.
@@ -149,6 +154,15 @@ def evaluate(info: VideoInfo, cal: Calibration, sides: Sides, labels: dict, mode
                 if c in CHECKS and v is not None:
                     # Store the true value.
                     values["marks"][c].append(v)
+            # Head tilt from the grille marks: treat the grille ends as the "eyes" and reuse eyes_level.
+            g = fr["points"]
+            # Only when both grille ends were marked.
+            if g.get("grille_left_end") and g.get("grille_right_end"):
+                # Same marks, with the grille ends in place of the eyes.
+                helmet = marks_to_keypoints({**g, "eye_left_in_picture": g["grille_left_end"],
+                                             "eye_right_in_picture": g["grille_right_end"]}, sides)
+                # Its eyes_level is the helmet tilt.
+                values["marks"]["head_tilt_helmet"].append(front_checks(helmet, cal, sides)["eyes_level"])
         # Each model on the same frame.
         for m, pose in models.items():
             # Run the model.
@@ -173,6 +187,10 @@ def evaluate(info: VideoInfo, cal: Calibration, sides: Sides, labels: dict, mode
                     if c in CHECKS and v is not None:
                         # Store the model's value.
                         values[m][c].append(v)
+                        # The model's eye-line tilt is what the engine reports as head tilt today.
+                        if c == "eyes_level":
+                            # Compare it in the helmet row as well.
+                            values[m]["head_tilt_helmet"].append(v)
     # Head movement per delivery, for the marks and each model.
     for entry in by_delivery.values():
         # Each source.

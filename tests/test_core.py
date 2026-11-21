@@ -351,3 +351,22 @@ def test_model_head_tilt_compared_with_marked_grille():
     marks = {"grille_left_end": [80, 30], "grille_right_end": [180, 20]}
     # The model's level eye line is 5.7 degrees off the helmet's true tilt.
     assert point_errors(kp, marks, front_on_sides("right"), 1.0)["head tilt vs helmet marks (deg)"] == pytest.approx(5.71, abs=0.01)
+
+
+def test_helmet_tilt_finds_known_angle():
+    # OpenCV draws the test image.
+    import cv2
+    # Function under test.
+    from batlab.head_tilt import helmet_tilt
+    # Grey 600 x 600 frame.
+    img = np.full((600, 600, 3), 90, dtype=np.uint8)
+    # Three bright bars 100 px wide (like a grille at 0.21 cm/px), 12 px apart, centred at x 300.
+    for y in (310, 322, 334):
+        # Draw one bar.
+        cv2.rectangle(img, (250, y), (350, y + 3), (230, 230, 230), -1)
+    # Tilt the whole picture by 4 degrees about the head point (300, 300).
+    m = cv2.getRotationMatrix2D((300, 300), 4.0, 1.0)
+    # Rotate; anticlockwise on screen raises the bars' right ends.
+    img = cv2.warpAffine(img, m, (600, 600), borderValue=(90, 90, 90))
+    # Raised right end = negative angle in the picture convention (y grows downward).
+    assert helmet_tilt(img, (300, 300), 0.21) == pytest.approx(-4.0, abs=0.3)

@@ -14,6 +14,13 @@ good = 5.0
 ok = 10.0
 unit = "deg"
 
+[head_tilt]
+# Head tilt measured from the helmet grille, degrees (replaces eyes_level once verified; eyes are
+# hidden under the helmet peak at 4K). good: WC eyes-level target (<= 5). ok: PLACEHOLDER.
+good = 5.0
+ok = 10.0
+unit = "deg"
+
 [head_on_middle_off]
 # Distance of the head outside the off-to-middle stump zone, cm (0 = inside). good: WC (<= 0.5). ok: PLACEHOLDER.
 good = 0.5

@@ -16,3 +16,5 @@ hands = 3.0
 # Model eye-line tilt against the tilt of the marked helmet grille bar, degrees. Added 21 Nov 2026:
 # eyes are hidden under the helmet peak at 4K, so the grille gives the true head tilt.
 "head tilt vs helmet marks (deg)" = 2.0
+# The engine's helmet-based head tilt against the marked grille bar, degrees (added 21 Nov 2026).
+"head tilt (helmet detector, deg)" = 2.0

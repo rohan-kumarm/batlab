@@ -6,6 +6,8 @@
 
 [front]
 eyes_level = { value = 6.0, note = "6.0 deg tilt left" }
+# WillowCoach has no helmet-based check; its eyes-level value is the nearest comparison.
+head_tilt = { value = 6.0, note = "6.0 deg tilt left (eyes level)" }
 head_on_middle_off = { value = 0.0, note = "0.0 cm" }
 balance_side_to_side = { value = 5.4, note = "5.4 cm inside" }
 front_knee_inside_off_stump = { value = 10.9, note = "10.9 cm inside" }

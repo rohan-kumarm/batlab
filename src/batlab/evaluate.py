@@ -6,7 +6,9 @@ import numpy as np
 # Calibration (scale and stumps) and the batter region.
 from .calibrate import Calibration, batter_roi
 # The checks, reused so true values and model values are computed the same way.
-from .checks_front import front_checks
+from .checks_front import _head, front_checks
+# Helmet-based head tilt detector.
+from .head_tilt import helmet_tilt
 # Batting-hand directions.
 from .geometry import Sides
 # The keypoints record.
@@ -173,6 +175,22 @@ def evaluate(info: VideoInfo, cal: Calibration, sides: Sides, labels: dict, mode
             if kp is None:
                 # Next model.
                 continue
+            # Helmet detector, placed at this model's head point.
+            head = _head(kp)
+            # Detector angle (picture convention), or None.
+            det = helmet_tilt(frame, head, cal.cm_per_px) if head is not None else None
+            # Marked grille ends.
+            g1, g2 = fr["points"].get("grille_left_end"), fr["points"].get("grille_right_end")
+            # Compare with the marked grille angle when both exist.
+            if det is not None and g1 and g2:
+                # Marked angle, same convention.
+                marked = float(np.degrees(np.arctan2(g2[1] - g1[1], g2[0] - g1[0])))
+                # Store the absolute difference.
+                errors[m].setdefault("head tilt (helmet detector, deg)", []).append(abs(det - marked))
+            # On release frames, the detector gives the engine's head-tilt check value.
+            if det is not None and fr["frames_before_release"] == 0:
+                # Same sign convention as the marks' value (positive = tipping toward off side).
+                values[m]["head_tilt_helmet"].append(det * sides.off_dir)
             # Point errors against the marks.
             for p, e in point_errors(kp, fr["points"], sides, cal.cm_per_px).items():
                 # Collect measured errors only.
@@ -187,10 +205,7 @@ def evaluate(info: VideoInfo, cal: Calibration, sides: Sides, labels: dict, mode
                     if c in CHECKS and v is not None:
                         # Store the model's value.
                         values[m][c].append(v)
-                        # The model's eye-line tilt is what the engine reports as head tilt today.
-                        if c == "eyes_level":
-                            # Compare it in the helmet row as well.
-                            values[m]["head_tilt_helmet"].append(v)
+
     # Head movement per delivery, for the marks and each model.
     for entry in by_delivery.values():
         # Each source.
@@ -275,7 +290,7 @@ def format_report(result: dict, reference: dict | None, targets: dict | None = N
               "| Check | Your marks | " + " | ".join(models) + " | WillowCoach |",
               "|---|---|" + "---|" * len(models) + "---|"]
     # WillowCoach names for the comparable checks (head movement matches their head stillness).
-    wc_name = {"head_movement": "head_stillness_front"}
+    wc_name = {"head_movement": "head_stillness_front", "head_tilt_helmet": "head_tilt"}
     # One row per check.
     for c in CHECKS + ["head_movement"]:
         # Format one source's value.

@@ -7,7 +7,9 @@ from pathlib import Path
 
 # The pipeline's building blocks.
 from .calibrate import batter_roi, calibrate_front
-from .checks_front import front_checks, grade, head_stillness
+from .checks_front import _head, front_checks, grade, head_stillness
+# Head tilt from the helmet.
+from .head_tilt import helmet_tilt
 from .geometry import front_on_sides
 # Names of the 17 standard points, for saving keypoints in the report.
 from .pose import NAMES
@@ -100,12 +102,18 @@ def analyze(args: argparse.Namespace) -> None:
         checks = front_checks(kp_release, cal, sides) if kp_release is not None else {}
         # Sixth check, measured across the window.
         checks["head_stillness_front"] = head_stillness(kps, cal)
+        # Head point at release, used to place the helmet crop.
+        head = _head(kp_release) if kp_release is not None else None
+        # Helmet angle in the picture (left to right), or None.
+        angle = helmet_tilt(frames[-1], head, cal.cm_per_px) if head is not None else None
+        # Seventh check, in the eyes_level sign convention: positive when the head tips toward the off side.
+        checks["head_tilt"] = None if angle is None else angle * sides.off_dir
         # Count how many checks were measured.
         measured = sum(v is not None for v in checks.values())
-        # Eligible if a pose was found and at least 4 of the 6 checks were measured.
+        # Eligible if a pose was found and at least 4 checks were measured.
         eligible = kp_release is not None and measured >= 4
         # Reason shown when a delivery is not eligible.
-        reason = None if eligible else ("no batter found" if kp_release is None else f"only {measured}/6 checks measured")
+        reason = None if eligible else ("no batter found" if kp_release is None else f"only {measured}/{len(checks)} checks measured")
         # Text lines drawn on the image.
         lines = [f"Delivery {r.index}  release {r.time_s:.2f}s  frame {release_frame}"]
         # One line per measured check.

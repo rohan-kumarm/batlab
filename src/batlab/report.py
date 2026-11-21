@@ -31,7 +31,7 @@ BONES = [("left_shoulder", "right_shoulder"), ("left_hip", "right_hip"),
          ("left_ankle", "left_heel"), ("left_heel", "left_toe"), ("left_ankle", "left_toe"),
          ("right_ankle", "right_heel"), ("right_heel", "right_toe"), ("right_ankle", "right_toe")]
 # Order and display names of the checks in every output.
-CHECK_ORDER = ["eyes_level", "head_on_middle_off", "balance_side_to_side",
+CHECK_ORDER = ["eyes_level", "head_tilt", "head_on_middle_off", "balance_side_to_side",
                "front_knee_inside_off_stump", "hands_under_head", "head_stillness_front"]
 
 

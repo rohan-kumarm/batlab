@@ -23,7 +23,7 @@ class CombinedPose:
     """Pose adapter that merges a YOLO adapter (body) and a MediaPipe adapter (feet)."""
 
     def __init__(self, yolo, mediapipe, cm_per_px: float | None = None):
-        # Clip scale; when set, the outer shoe edges are also found from the image (see shoe_edges).
+        # Clip scale; when set, the outer shoe edges are also found from MediaPipe's person mask (see shoe_edges).
         # Set it per clip, since it comes from the stump calibration.
         self.cm_per_px = cm_per_px
         # Adapter used for the body points.
@@ -66,7 +66,7 @@ class CombinedPose:
         if self.cm_per_px is None:
             # Unchanged.
             return kp
-        # Imported here to keep the pose package free of the image search unless it is used.
+        # Imported here to keep the pose package free of the shoe search unless it is used.
         from ..shoe_edges import with_shoe_edges
-        # Keypoints with the two shoe edge points added.
-        return with_shoe_edges(frame, kp, self.cm_per_px)
+        # Keypoints with the two shoe edge points added, from MediaPipe's latest person mask.
+        return with_shoe_edges(kp, getattr(self.mediapipe, "last_mask", None), self.cm_per_px)

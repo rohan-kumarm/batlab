@@ -130,6 +130,9 @@ class MediaPipePose:
             with urllib.request.urlopen(MODEL_URL, context=context) as resp:
                 # Write the bytes to the cache file.
                 path.write_bytes(resp.read())
+        # Person mask from the latest estimate: (mask as 0-1 values, x offset, y offset) in full-frame
+        # pixels, or None. Used to find the outer shoe edges (see shoe_edges.py).
+        self.last_mask = None
         # Keep the image classes for converting frames.
         self._Image, self._fmt = Image, ImageFormat.SRGB
         # Build the landmarker: one person, single-image mode (each frame handled on its own).
@@ -138,7 +141,8 @@ class MediaPipePose:
         with _quiet_stderr():
             # Create the model.
             self.landmarker = PoseLandmarker.create_from_options(
-                PoseLandmarkerOptions(base_options=BaseOptions(model_asset_path=str(path)), num_poses=1)
+                PoseLandmarkerOptions(base_options=BaseOptions(model_asset_path=str(path)), num_poses=1,
+                                      output_segmentation_masks=True)
             )
 
     def _run(self, image: np.ndarray):
@@ -147,6 +151,8 @@ class MediaPipePose:
         rgb = np.ascontiguousarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         # Run the model.
         result = self.landmarker.detect(self._Image(image_format=self._fmt, data=rgb))
+        # The person mask for this image, sized like the image, if one was made.
+        self._mask = result.segmentation_masks[0].numpy_view().copy() if result.segmentation_masks else None
         # The first (only) person's landmarks, or None if nobody was found.
         return result.pose_landmarks[0] if result.pose_landmarks else None
 
@@ -166,10 +172,14 @@ class MediaPipePose:
         x1, y1, x2, y2 = max(0, int(x1)), max(0, int(y1)), min(w, int(x2)), min(h, int(y2))
         # The region itself.
         crop = frame[y1:y2, x1:x2]
+        # No mask until a person is found.
+        self.last_mask = None
         # Run on the region.
         lms = self._run(crop)
         # Found: convert to full-frame pixels by adding the region's top-left corner.
         if lms is not None:
+            # Keep the person mask, placed by the region's corner.
+            self.last_mask = None if getattr(self, "_mask", None) is None else (self._mask, x1, y1)
             # Fractions are of the crop's own width and height.
             return landmarks_to_keypoints(lms, x2 - x1, y2 - y1, (x1, y1))
         # Second try: pad the crop to a square with black on the right and bottom. MediaPipe works
@@ -184,5 +194,7 @@ class MediaPipePose:
         if lms is None:
             # Signal missing.
             return None
+        # Keep the person mask, cut back to the crop (the padding was on the right and bottom).
+        self.last_mask = None if getattr(self, "_mask", None) is None else (self._mask[:crop.shape[0], :crop.shape[1]], x1, y1)
         # Fractions are of the square's size; padding was added right and bottom, so the offset is unchanged.
         return landmarks_to_keypoints(lms, side, side, (x1, y1))

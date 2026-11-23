@@ -58,6 +58,12 @@ def prepare(session_path: str):
 
 def load_pose(name: str, model_path: str | None):
     """Load a pose adapter by name. Imports happen here so only that model's library is needed."""
+    # Combined: YOLO for the body, MediaPipe for the feet. A model path does not apply to it.
+    if name == "combined":
+        # Import only when chosen.
+        from .pose.combined import CombinedPose
+        # Each part loads its default model.
+        return CombinedPose(load_pose("yolo", None), load_pose("mediapipe", None))
     # MediaPipe adapter (Apache 2.0).
     if name == "mediapipe":
         # Import only when chosen.
@@ -195,8 +201,15 @@ def evaluate_cmd(args: argparse.Namespace) -> None:
     from .evaluate import combine, evaluate, format_report
     # Load each requested model once, with its optional model file.
     paths = {"yolo": args.yolo_model, "mediapipe": args.mediapipe_model}
-    # Name -> loaded adapter.
-    models = {m: load_pose(m, paths[m]) for m in args.pose}
+    # Name -> loaded adapter, for the single models.
+    models = {m: load_pose(m, paths[m]) for m in args.pose if m != "combined"}
+    # The combined model reuses the single adapters (loading them if they were not requested).
+    if "combined" in args.pose:
+        # Imported only when needed.
+        from .pose.combined import CombinedPose
+        # Build from the same YOLO and MediaPipe adapters.
+        models["combined"] = CombinedPose(models.get("yolo") or load_pose("yolo", paths["yolo"]),
+                                          models.get("mediapipe") or load_pose("mediapipe", paths["mediapipe"]))
     # Raw results grouped by split ("tune" / "test").
     raws: dict[str, list] = {"tune": [], "test": []}
     # Go through every labels file.
@@ -293,7 +306,7 @@ def main() -> None:
     # WillowCoach reference values file.
     a.add_argument("--reference", default=str(ROOT / "config" / "willowcoach_reference.toml"))
     # Which pose model to use.
-    a.add_argument("--pose", choices=["yolo", "mediapipe"], default="yolo")
+    a.add_argument("--pose", choices=["yolo", "mediapipe", "combined"], default="yolo")
     # Optional path to the pose model file; without it, each model downloads its default on first use.
     a.add_argument("--pose-model", default=None)
     # Length of the head stillness window before release, in seconds.
@@ -311,7 +324,7 @@ def main() -> None:
     # Session for older labels files that do not record one.
     ev.add_argument("--session", default=None, help="Session file, only for labels.json files without one")
     # Which models to score (one or both).
-    ev.add_argument("--pose", nargs="+", choices=["yolo", "mediapipe"], default=["yolo", "mediapipe"])
+    ev.add_argument("--pose", nargs="+", choices=["yolo", "mediapipe", "combined"], default=["yolo", "mediapipe", "combined"])
     # Optional model files for each.
     ev.add_argument("--yolo-model", default=None)
     ev.add_argument("--mediapipe-model", default=None)

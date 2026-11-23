@@ -31,31 +31,31 @@ head_movement: largest eye-midpoint movement across the 3 marked frames of each 
 
 # Tune set
 
-Clips: 1. Batter found: yolo 9/9 frames, mediapipe 2/9 frames
+Clips: 2. Batter found: yolo 99/99 frames, mediapipe 92/99 frames
 
 ## Point error vs your marks (lower is better)
 
 | Point | Target | yolo | mediapipe |
 |---|---|---|---|
-| eye tilt (deg) | 2.0 | 2.1 (9) FAIL | 6.2 (2) FAIL |
-| feet left edge (sideways) | 3.0 | 19.0 (9) FAIL | 2.3 (2) PASS |
-| feet right edge (sideways) | 3.0 | 12.5 (9) FAIL | 9.2 (2) FAIL |
-| front knee | 3.0 | 6.0 (9) FAIL | 4.7 (2) FAIL |
-| hands | 3.0 | 5.1 (9) FAIL | 11.6 (2) FAIL |
-| head (eye midpoint) | 2.0 | 0.7 (9) PASS | 3.8 (2) FAIL |
-| head tilt (helmet detector, deg) | 2.0 | 0.4 (9) PASS | 1.5 (2) PASS |
-| head tilt vs helmet marks (deg) | 2.0 | 2.7 (9) FAIL | 2.5 (2) FAIL |
+| eye tilt (deg) | 2.0 | 5.6 (39) FAIL | 4.0 (32) FAIL |
+| feet left edge (sideways) | 3.0 | 23.6 (39) FAIL | 2.8 (32) PASS |
+| feet right edge (sideways) | 3.0 | 12.3 (39) FAIL | 8.8 (32) FAIL |
+| front knee | 3.0 | 2.9 (39) PASS | 5.1 (32) FAIL |
+| hands | 3.0 | 3.3 (39) FAIL | 4.6 (32) FAIL |
+| head (eye midpoint) | 2.0 | 1.0 (39) PASS | 3.9 (32) FAIL |
+| head tilt (helmet detector, deg) | 2.0 | 1.5 (39) PASS | 1.6 (32) PASS |
+| head tilt vs helmet marks (deg) | 2.0 | 3.8 (39) FAIL | 2.9 (32) FAIL |
 
 ## Check values on release frames
 
 | Check | Your marks | yolo | mediapipe | WillowCoach |
 |---|---|---|---|---|
-| eyes_level | +2.6 | +0.5 | +6.2 | 6.0 deg tilt left |
-| head_tilt_helmet | +3.8 | +4.2 | +5.3 | 6.0 deg tilt left (eyes level) |
-| head_on_middle_off | -1.0 | -0.8 | +0.0 | 0.0 cm |
-| front_knee_inside_off_stump | +27.9 | +29.7 | +29.0 | 10.9 cm inside |
-| hands_under_head | -4.4 | -6.7 | -13.1 | 4.1 cm |
-| head_movement | +3.2 | +3.4 | - | 2.7 cm |
+| eyes_level | +4.3 | -2.1 | +1.8 | 6.0 deg tilt left |
+| head_tilt_helmet | +2.1 | +4.4 | +4.2 | 6.0 deg tilt left (eyes level) |
+| head_on_middle_off | -7.4 | -6.2 | -4.3 | 0.0 cm |
+| front_knee_inside_off_stump | +31.3 | +31.8 | +35.2 | 10.9 cm inside |
+| hands_under_head | -2.0 | -4.9 | -8.0 | 4.1 cm |
+| head_movement | +2.1 | +2.0 | +2.0 | 2.7 cm |
 
 Numbers in brackets: how many frames the error is averaged over.
 head_movement: largest eye-midpoint movement across the 3 marked frames of each delivery (0.2 s before release to release), averaged over deliveries.

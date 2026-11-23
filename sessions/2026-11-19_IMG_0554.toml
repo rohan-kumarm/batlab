@@ -8,7 +8,7 @@ delivery_source = "machine"
 machine_speed_mph = 65.0
 # Balls faced, counted by the batter (checks the release finder).
 balls_faced = 31
-split = "test"
+split = "tune"
 
 [calibration]
 stump_height_cm = 71.1

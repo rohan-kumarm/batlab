@@ -18,9 +18,12 @@ import numpy as np
 # Width of the helmet grille's top bar in cm, measured from the 10 Nov marks (about 101 px at
 # 0.2116 cm/px). Used to size the crop at any zoom.
 GRILLE_CM = 21.0
-# Crop around the head point, in grille widths: 0.3 above, 0.9 below, 0.7 either side.
-# Chosen on the 10 Nov tune frames over 2 other sizes (mean error 0.5 deg vs 0.6 and 0.8).
-CROP_UP, CROP_DOWN, CROP_HALF = 0.3, 0.9, 0.7
+# Crop around the head point, in grille widths: none above, 0.9 below, 0.6 either side.
+# The crop starts at the eyes so the helmet peak is left out: the peak's lower edge is a curved
+# brim whose picture angle differs from the grille's (on IMG_0552 a peak-only crop read 4 deg off
+# the marked grille, and including it made the detector read 1.9 deg high there). Chosen on the
+# 10 Nov and IMG_0552 tune frames (mean error 0.4 and 0.9 deg, was 0.5 and 1.9).
+CROP_UP, CROP_DOWN, CROP_HALF = 0.0, 0.9, 0.6
 
 
 def helmet_tilt(frame: np.ndarray, head_xy, cm_per_px: float) -> float | None:

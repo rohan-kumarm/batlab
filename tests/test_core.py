@@ -397,3 +397,33 @@ def test_left_ball_with_faint_follow_up_still_counts():
     rel = find_releases(audio, sr)
     # The quiet delivery at 3.0 s is found.
     assert any(abs(r.time_s - 3.0) < 0.005 for r in rel)
+
+
+def test_left_ball_with_no_follow_up_counts_if_low_pitched():
+    # Fixed seed for repeatable noise.
+    rng = np.random.default_rng(3)
+    # Sample rate.
+    sr = 48000
+    # Six seconds of faint background noise.
+    audio = rng.normal(0, 1e-4, 6 * sr).astype(np.float32)
+    # Time axis for a 40 ms burst.
+    tt = np.arange(int(0.04 * sr)) / sr
+
+    def thud(t: float, size: float, hz: float) -> None:
+        """Add a decaying tone burst at time t: low hz like the machine, high hz like a knock."""
+        # Start sample.
+        s = int(t * sr)
+        # Add the burst.
+        # A strong tone at hz plus a weaker click of broadband noise, so it also passes the high-pass.
+        audio[s:s + len(tt)] += size * (np.sin(2 * np.pi * hz * tt) + 0.1 * rng.normal(0, 1, len(tt))) * np.exp(-tt / 0.005)
+
+    # Loudest sound in the clip (sets the scale): a sharp high bat hit.
+    thud(0.5, 0.3, 4000)
+    # A low machine thud about 0.4 of the loudest after the high-pass, with nothing after it (ball left).
+    thud(3.0, 0.8, 500)
+    # A quiet high-pitched knock with nothing after it: not a delivery.
+    thud(5.0, 0.12, 4000)
+    # Run detection.
+    times = [r.time_s for r in find_releases(audio, sr)]
+    # The thud counts, the knock does not.
+    assert any(abs(t - 3.0) < 0.01 for t in times) and not any(abs(t - 5.0) < 0.01 for t in times)

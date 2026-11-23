@@ -6,6 +6,8 @@ batting_hand = "right"
 date = "2026-11-19"
 delivery_source = "machine"
 machine_speed_mph = 65.0
+# Balls faced, counted by the batter (checks the release finder).
+balls_faced = 31
 split = "test"
 
 [calibration]

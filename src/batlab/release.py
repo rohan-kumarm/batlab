@@ -34,6 +34,11 @@ class ReleaseParams:
     # left or edged makes only a faint sound (10-20x background on IMG_0552), far below the
     # release threshold; requiring a loud one missed 3 of 30 deliveries there.
     pair_min_ratio_to_floor: float = 10.0
+    # The machine's firing sound is a low thud: the average pitch (spectral centroid) of the first
+    # 40 ms was 363-790 Hz for every release on 10 Nov, IMG_0552 and IMG_0553, while bat sounds were
+    # 967-3912 Hz and stray knocks 1576-7776 Hz. A quieter sound this low counts as a release even
+    # with no confirming sound after it (a ball left alone; IMG_0553 at 133.3 s).
+    machine_max_centroid_hz: float = 850.0
     # Two sounds closer than this (s) are treated as one sound.
     min_peak_spacing_s: float = 0.15
     # After a release, sounds within this many seconds belong to the same delivery (bat, net).
@@ -69,6 +74,16 @@ def loudness_envelope(audio: np.ndarray, sr: int, p: ReleaseParams) -> np.ndarra
     return np.sqrt(np.convolve(hp**2, np.ones(win) / win, mode="same"))
 
 
+def sound_centroid_hz(audio: np.ndarray, sr: int, peak: int) -> float:
+    """Average pitch (spectral centroid, Hz) of the raw sound from 5 ms before to 35 ms after a peak."""
+    # The sound around the peak.
+    seg = audio[max(0, peak - int(0.005 * sr)): peak + int(0.035 * sr)]
+    # Power at each frequency.
+    f, power = signal.welch(seg, sr, nperseg=min(512, len(seg)))
+    # Power-weighted mean frequency.
+    return float(np.sum(f * power) / max(np.sum(power), 1e-30))
+
+
 def find_releases(audio: np.ndarray, sr: int, p: ReleaseParams = ReleaseParams()) -> list[Release]:
     """Return one Release per delivery found in the audio."""
     # Loudness over time.
@@ -99,8 +114,8 @@ def find_releases(audio: np.ndarray, sr: int, p: ReleaseParams = ReleaseParams()
         if env[pk] < strong:
             # Is any faint-or-louder peak inside the machine-to-bat range?
             paired = any(p.pair_min_s <= (later - pk) / sr <= p.pair_max_s for later in faint)
-            # Without one it is probably a stray knock, not a delivery.
-            if not paired:
+            # Without one it is a stray knock unless it has the machine's low pitch.
+            if not paired and sound_centroid_hz(audio, sr, pk) > p.machine_max_centroid_hz:
                 # Go to the next peak.
                 continue
         # Find the onset: step back from the peak while loudness stays above 20% of the peak.

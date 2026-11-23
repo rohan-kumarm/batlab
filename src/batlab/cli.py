@@ -42,6 +42,10 @@ def prepare(session_path: str):
     releases = find_releases(read_audio(info.path), 48000)
     # Report how many deliveries were found.
     print(f"Deliveries found from machine sound: {len(releases)}")
+    # Warn when the count differs from the balls the batter says they faced.
+    if session.balls_faced is not None and session.balls_faced != len(releases):
+        # Clear warning with both numbers.
+        print(f"WARNING: session says {session.balls_faced} balls were faced, but {len(releases)} deliveries were found.")
     # Measure the stumps for scale and stump lines.
     cal = calibrate_front(info, session.stump_height_cm)
     # Report the calibration.

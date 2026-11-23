@@ -370,3 +370,30 @@ def test_helmet_tilt_finds_known_angle():
     img = cv2.warpAffine(img, m, (600, 600), borderValue=(90, 90, 90))
     # Raised right end = negative angle in the picture convention (y grows downward).
     assert helmet_tilt(img, (300, 300), 0.21) == pytest.approx(-4.0, abs=0.3)
+
+
+def test_left_ball_with_faint_follow_up_still_counts():
+    # Fixed seed for repeatable noise.
+    rng = np.random.default_rng(2)
+    # Sample rate.
+    sr = 48000
+    # Six seconds of faint background noise.
+    audio = rng.normal(0, 1e-4, 6 * sr).astype(np.float32)
+
+    def click(t: float, size: float) -> None:
+        """Add a 2 ms burst of noise at time t with the given loudness."""
+        # Start sample.
+        s = int(t * sr)
+        # Add the burst.
+        audio[s:s + 96] += rng.normal(0, size, 96)
+
+    # Loudest sound in the clip (sets the scale): a bat hit after a strong release elsewhere.
+    click(0.5, 0.3)
+    # A quiet machine sound (0.4 of the loudest) at 3.0 s...
+    click(3.0, 0.12)
+    # ...followed 0.75 s later by only a faint sound (the ball was left), as on IMG_0552.
+    click(3.75, 0.004)
+    # Run detection.
+    rel = find_releases(audio, sr)
+    # The quiet delivery at 3.0 s is found.
+    assert any(abs(r.time_s - 3.0) < 0.005 for r in rel)

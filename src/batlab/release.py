@@ -30,6 +30,10 @@ class ReleaseParams:
     pair_min_s: float = 0.55
     # Upper end of the confirming range.
     pair_max_s: float = 0.9
+    # The confirming sound only needs to be this many times the background level. A ball that is
+    # left or edged makes only a faint sound (10-20x background on IMG_0552), far below the
+    # release threshold; requiring a loud one missed 3 of 30 deliveries there.
+    pair_min_ratio_to_floor: float = 10.0
     # Two sounds closer than this (s) are treated as one sound.
     min_peak_spacing_s: float = 0.15
     # After a release, sounds within this many seconds belong to the same delivery (bat, net).
@@ -77,6 +81,8 @@ def find_releases(audio: np.ndarray, sr: int, p: ReleaseParams = ReleaseParams()
     strong = float(env.max()) * p.strong_fraction_of_max
     # Find local loudness peaks above the threshold, at least min_peak_spacing_s apart.
     peaks, _ = signal.find_peaks(env, height=threshold, distance=int(p.min_peak_spacing_s * sr))
+    # All peaks above the much lower confirming level, used only to confirm quieter releases.
+    faint, _ = signal.find_peaks(env, height=floor * p.pair_min_ratio_to_floor, distance=int(p.min_peak_spacing_s * sr))
     # Collected results.
     releases: list[Release] = []
     # Time (s) until which new peaks are treated as part of the current delivery.
@@ -91,8 +97,8 @@ def find_releases(audio: np.ndarray, sr: int, p: ReleaseParams = ReleaseParams()
             continue
         # A quieter sound needs a second sound 0.55-0.9 s later (machine, then bat) to count.
         if env[pk] < strong:
-            # Is any later peak inside the machine-to-bat range?
-            paired = any(p.pair_min_s <= (later - pk) / sr <= p.pair_max_s for later in peaks[i + 1:])
+            # Is any faint-or-louder peak inside the machine-to-bat range?
+            paired = any(p.pair_min_s <= (later - pk) / sr <= p.pair_max_s for later in faint)
             # Without one it is probably a stray knock, not a delivery.
             if not paired:
                 # Go to the next peak.

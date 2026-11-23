@@ -22,7 +22,10 @@ PAD = 0.25
 class CombinedPose:
     """Pose adapter that merges a YOLO adapter (body) and a MediaPipe adapter (feet)."""
 
-    def __init__(self, yolo, mediapipe):
+    def __init__(self, yolo, mediapipe, cm_per_px: float | None = None):
+        # Clip scale; when set, the outer shoe edges are also found from the image (see shoe_edges).
+        # Set it per clip, since it comes from the stump calibration.
+        self.cm_per_px = cm_per_px
         # Adapter used for the body points.
         self.yolo = yolo
         # Adapter used for the foot points.
@@ -44,8 +47,8 @@ class CombinedPose:
             feet = self.mediapipe.estimate(frame, (x1 - pad, y1 - pad, x2 + pad, y2 + pad))
         # Fall back to whichever model found someone.
         if body is None or feet is None:
-            # Either one result or None.
-            return body if body is not None else feet
+            # Either one result or None, with shoe edges when the scale is known.
+            return self._shoes(frame, body if body is not None else feet)
         # Copy YOLO's points so its result is not changed.
         xy, conf = body.xy.copy(), body.conf.copy()
         # Replace the ankles with MediaPipe's.
@@ -55,4 +58,15 @@ class CombinedPose:
             # Confidence.
             conf[IDX[name]] = feet.conf[IDX[name]]
         # Heels and toes exist only in MediaPipe; keep any extra points YOLO had too.
-        return Keypoints(xy, conf, body.box, {**body.extra, **feet.extra})
+        return self._shoes(frame, Keypoints(xy, conf, body.box, {**body.extra, **feet.extra}))
+
+    def _shoes(self, frame: np.ndarray, kp: Keypoints | None) -> Keypoints | None:
+        """Add the outer shoe edges found in the image, if the clip's scale is known."""
+        # Without a scale the band sizes are unknown: return as is.
+        if self.cm_per_px is None:
+            # Unchanged.
+            return kp
+        # Imported here to keep the pose package free of the image search unless it is used.
+        from ..shoe_edges import with_shoe_edges
+        # Keypoints with the two shoe edge points added.
+        return with_shoe_edges(frame, kp, self.cm_per_px)

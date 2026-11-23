@@ -141,7 +141,8 @@ def front_checks(kp: Keypoints, cal: Calibration, sides: Sides) -> dict[str, flo
     # 3. Side-to-side balance: how far the centre of mass sits inside the outer foot lines.
     com = centre_of_mass(kp)
     # Foot points that mark the base: ankles always; heels and toes when the model gives them.
-    foot = [kp.point(n) for n in ("left_ankle", "right_ankle", "left_heel", "right_heel", "left_toe", "right_toe")]
+    foot = [kp.point(n) for n in ("left_ankle", "right_ankle", "left_heel", "right_heel", "left_toe", "right_toe",
+                                     "shoe_left_edge", "shoe_right_edge")]
     # Keep the ones that were found.
     foot = [p for p in foot if p is not None]
     # Measurable when the centre of mass and at least both ankles' worth of points exist.

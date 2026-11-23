@@ -86,6 +86,10 @@ def analyze(args: argparse.Namespace) -> None:
     reference = load_toml(args.reference) if Path(args.reference).exists() else None
     # Load the chosen pose model.
     pose = load_pose(args.pose, args.pose_model)
+    # The combined model also finds the outer shoe edges, which needs the clip's scale.
+    if hasattr(pose, "cm_per_px"):
+        # Scale from the stump calibration.
+        pose.cm_per_px = cal.cm_per_px
     # Report which model is in use.
     print(f"Pose model: {args.pose}")
     # Region around the batter, from the stumps (MediaPipe needs it; YOLO ignores it).
@@ -226,6 +230,10 @@ def evaluate_cmd(args: argparse.Namespace) -> None:
         print(f"\n== {lf}")
         # Shared setup for that clip (reads the video, calibrates).
         session, info, _, cal, sides = prepare(session_path)
+        # The combined model's shoe edge search needs this clip's scale.
+        if "combined" in models:
+            # Scale from the stump calibration.
+            models["combined"].cm_per_px = cal.cm_per_px
         # Score this clip and file the raw results under its split.
         raws[session.split].append(evaluate(info, cal, sides, labels, models))
     # WillowCoach values for the last column, if the file exists.

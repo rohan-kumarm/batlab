@@ -427,3 +427,30 @@ def test_left_ball_with_no_follow_up_counts_if_low_pitched():
     times = [r.time_s for r in find_releases(audio, sr)]
     # The thud counts, the knock does not.
     assert any(abs(t - 3.0) < 0.01 for t in times) and not any(abs(t - 5.0) < 0.01 for t in times)
+
+
+def test_shoe_edges_reach_the_end_of_the_white_shoe():
+    # Imported here: only this test needs it.
+    from batlab.shoe_edges import shoe_edges
+    # Green turf, 300 x 400 pixels.
+    img = np.zeros((300, 400, 3), np.uint8)
+    # Turf colour (BGR).
+    img[:] = (60, 150, 70)
+    # Two white shoes, 2 px apart (a dark seam), from x=100 to x=260 at sole height.
+    img[200:230, 100:180] = (235, 235, 235)
+    # Second shoe after the seam.
+    img[200:230, 182:260] = (235, 235, 235)
+    # Model foot points only on the first shoe (as MediaPipe does front-on).
+    xy = np.zeros((len(IDX), 2))
+    # Confidence for each point.
+    conf = np.zeros(len(IDX))
+    # Two ankles inside the first shoe.
+    for name, p in (("left_ankle", (120, 225)), ("right_ankle", (160, 225))):
+        # Position.
+        xy[IDX[name]] = p
+        # Found.
+        conf[IDX[name]] = 1.0
+    # At 0.25 cm/px, the 2 px seam is bridged and the search reaches the second shoe's end.
+    left, right, _ = shoe_edges(img, Keypoints(xy, conf, (0, 0, 0, 0)), 0.25)
+    # Both outer ends found to the pixel.
+    assert (left, right) == (100.0, 259.0)

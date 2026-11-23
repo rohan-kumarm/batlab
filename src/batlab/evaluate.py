@@ -98,7 +98,8 @@ def point_errors(kp: Keypoints, marks: dict, sides: Sides, cm_per_px: float) -> 
     # Front knee error (uses the model's own left/right label for the front leg).
     out["front knee"] = dist(kp.point(f"{sides.front}_knee"), marks.get("front_knee"))
     # Model foot points, for the outer edges of the base.
-    feet = [kp.point(n) for n in ("left_ankle", "right_ankle", "left_heel", "right_heel", "left_toe", "right_toe")]
+    feet = [kp.point(n) for n in ("left_ankle", "right_ankle", "left_heel", "right_heel", "left_toe", "right_toe",
+                                     "shoe_left_edge", "shoe_right_edge")]
     # Keep the ones found.
     feet = [p for p in feet if p is not None]
     # Sideways error of the left-most foot point (only x matters for the base).

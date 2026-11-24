@@ -7,8 +7,8 @@ Clips: 1. Batter found: yolo 21/21 frames, mediapipe 21/21 frames, combined 21/2
 | Point | Target | yolo | mediapipe | combined |
 |---|---|---|---|---|
 | eye tilt (deg) | 2.0 | 6.8 (21) FAIL | 4.9 (21) FAIL | 6.8 (21) FAIL |
-| feet left edge (sideways) | 3.0 | 23.6 (21) FAIL | 2.4 (21) PASS | 1.8 (21) PASS |
-| feet right edge (sideways) | 3.0 | 12.3 (21) FAIL | 8.3 (21) FAIL | 1.5 (21) PASS |
+| feet left edge (sideways) | 3.0 | 23.6 (21) FAIL | 2.4 (21) PASS | 0.7 (21) PASS |
+| feet right edge (sideways) | 3.0 | 12.3 (21) FAIL | 8.3 (21) FAIL | 0.5 (21) PASS |
 | front knee | 3.0 | 2.0 (21) PASS | 5.1 (21) FAIL | 2.0 (21) PASS |
 | hands | 3.0 | 2.4 (21) PASS | 3.6 (21) FAIL | 2.4 (21) PASS |
 | head (eye midpoint) | 2.0 | 1.0 (21) PASS | 3.8 (21) FAIL | 1.0 (21) PASS |
@@ -38,8 +38,8 @@ Clips: 2. Batter found: yolo 99/99 frames, mediapipe 92/99 frames, combined 99/9
 | Point | Target | yolo | mediapipe | combined |
 |---|---|---|---|---|
 | eye tilt (deg) | 2.0 | 5.6 (39) FAIL | 4.0 (32) FAIL | 5.6 (39) FAIL |
-| feet left edge (sideways) | 3.0 | 23.6 (39) FAIL | 2.8 (32) PASS | 2.1 (39) PASS |
-| feet right edge (sideways) | 3.0 | 12.3 (39) FAIL | 8.8 (32) FAIL | 1.9 (39) PASS |
+| feet left edge (sideways) | 3.0 | 23.6 (39) FAIL | 2.8 (32) PASS | 0.7 (39) PASS |
+| feet right edge (sideways) | 3.0 | 12.3 (39) FAIL | 8.8 (32) FAIL | 1.5 (39) PASS |
 | front knee | 3.0 | 2.9 (39) PASS | 5.1 (32) FAIL | 2.9 (39) PASS |
 | hands | 3.0 | 3.3 (39) FAIL | 4.6 (32) FAIL | 3.3 (39) FAIL |
 | head (eye midpoint) | 2.0 | 1.0 (39) PASS | 3.9 (32) FAIL | 1.0 (39) PASS |
